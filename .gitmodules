@@ -1,0 +1,3 @@
+[submodule "charset"]
+	path = charset
+	url = git://git.tartarus.org/simon/charset.git
