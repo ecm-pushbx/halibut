@@ -1134,6 +1134,28 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 	    prevf = f;
 
 	    /*
+	     * Special case: for single-file mode, we output the top
+	     * section title before the TOC.
+	     */
+	    if (files.head == files.tail && sects.head->type == TOP) {
+		element_open(&ho, "h1");
+
+		/*
+		 * Provide anchor(s) for cross-links to target.
+		 */
+		{
+		    int i;
+		    for (i=0; i < conf.ntfragments; i++)
+			if (sects.head->fragments[i])
+			    html_fragment(&ho, sects.head->fragments[i]);
+		}
+
+		html_section_title(&ho, sects.head, f, keywords, &conf, TRUE);
+
+		element_close(&ho, "h1");
+	    }
+
+	    /*
 	     * Write out a prefix TOC for the file (if a leaf file).
 	     * 
 	     * We start by going through the section list and
@@ -1143,12 +1165,9 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 	     * contains all descendants of any section it
 	     * contains), because this will play a part in our
 	     * decision on whether or not to _output_ the TOC.
-	     * 
-	     * Special case: we absolutely do not do this if we're
-	     * in single-file mode.
 	     */
-	    if (files.head != files.tail) {
-		int ntoc = 0, tocsize = 0;
+	    {
+		int ntoc = 0, tocsize = 0, tocstartidx = 0;
 		htmlsect **toc = NULL;
 		int leaf = TRUE;
 
@@ -1185,16 +1204,28 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 		    }
 		}
 
+		/*
+		 * Special case: for single-file mode, we don't output
+		 * the first section TOC entry if it's the top since we
+		 * have already output a section title for it above the
+		 * TOC, and since we don't output the top TOC entry, we
+		 * reduce the level of the remaining TOC entries by one
+		 * so that they are output correctly one level up from
+		 * where they would have been.
+		 */
+		tocstartidx = (files.head == files.tail && ntoc > 0 &&
+			       toc[0]->type == TOP) ? 1 : 0;
 		if (leaf && conf.leaf_contains_contents &&
-		    ntoc >= conf.leaf_smallest_contents) {
+		    ntoc >= conf.leaf_smallest_contents &&
+		    tocstartidx < ntoc) {
 		    int i;
 
-		    for (i = 0; i < ntoc; i++) {
+		    for (i = tocstartidx; i < ntoc; i++) {
 			htmlsect *s = toc[i];
 			int hlevel = (s->type == TOP ? -1 :
 				      s->type == INDEX ? 0 :
 				      heading_depth(s->title))
-			    - f->min_heading_depth + 1;
+			    - tocstartidx - f->min_heading_depth + 1;
 
 			assert(hlevel >= 1);
 			html_contents_entry(&ho, hlevel, s,
@@ -1266,38 +1297,43 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 
 		    /*
 		     * Display the section heading.
+		     *
+		     * Special case: for single-file mode, we don't
+		     * output the top section title since we have
+		     * already output it before the TOC.
 		     */
+		    if (files.head != files.tail || s->type != TOP) {
+			hlevel = (s->type == TOP ? -1 :
+				  s->type == INDEX ? 0 :
+				  heading_depth(s->title))
+			    - f->min_heading_depth + 1;
+			assert(hlevel >= 1);
+			/* HTML headings only go up to <h6> */
+			if (hlevel > 6)
+			    hlevel = 6;
+			htag[0] = 'h';
+			htag[1] = '0' + hlevel;
+			htag[2] = '\0';
+			element_open(&ho, htag);
 
-		    hlevel = (s->type == TOP ? -1 :
-			      s->type == INDEX ? 0 :
-			      heading_depth(s->title))
-			- f->min_heading_depth + 1;
-		    assert(hlevel >= 1);
-		    /* HTML headings only go up to <h6> */
-		    if (hlevel > 6)
-			hlevel = 6;
-		    htag[0] = 'h';
-		    htag[1] = '0' + hlevel;
-		    htag[2] = '\0';
-		    element_open(&ho, htag);
+			/*
+			 * Provide anchor(s) for cross-links to target.
+			 * 
+			 * (Also we'll have to do this separately in
+			 * other paragraph types - NumberedList and
+			 * BiblioCited.)
+			 */
+			{
+			    int i;
+			    for (i=0; i < conf.ntfragments; i++)
+				if (s->fragments[i])
+				    html_fragment(&ho, s->fragments[i]);
+			}
 
-		    /*
-		     * Provide anchor(s) for cross-links to target.
-		     * 
-		     * (Also we'll have to do this separately in
-		     * other paragraph types - NumberedList and
-		     * BiblioCited.)
-		     */
-		    {
-			int i;
-			for (i=0; i < conf.ntfragments; i++)
-			    if (s->fragments[i])
-				html_fragment(&ho, s->fragments[i]);
+			html_section_title(&ho, s, f, keywords, &conf, TRUE);
+
+			element_close(&ho, htag);
 		    }
-
-		    html_section_title(&ho, s, f, keywords, &conf, TRUE);
-
-		    element_close(&ho, htag);
 
 		    /*
 		     * Now display the section text.
