@@ -426,7 +426,7 @@ These formatting directives can also be used in the
 \dt \I{\cw{\\cfg\{html-single-filename\}}}\cw{\\cfg\{html-single-filename\}\{}\e{filename}\cw{\}}
 
 \dd Sets the file name in which to store the entire document, if
-Halibut is configured (using \c{\\cfg\{html-leaf-level\}\{0\}} to
+Halibut is configured (using \c{\\cfg\{html-leaf-level\}\{0\}}) to
 produce a single self-contained file. Both this directive \e{and}
 \c{\\cfg\{html-leaf-level\}\{0\}} are implicitly generated if you
 provide a file name parameter after the command-line option
