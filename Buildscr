@@ -8,6 +8,9 @@ ifnexist halibut/charset checkout charset halibut/charset
 set Version $(!builddate).$(vcsid)
 ifneq "$(RELEASE)" "" set Version $(RELEASE)
 
+# use perl to avoid inconsistent behaviour of echo '\v'
+in halibut do perl -e 'print "\n\\versionid Halibut version $$ARGV[0]\n"' $(Version) >> doc/manpage.but
+
 set Rel
 ifneq "$(RELEASE)" "" set Rel RELEASE=$(RELEASE)
 

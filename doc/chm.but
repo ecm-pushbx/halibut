@@ -15,5 +15,3 @@
 \cfg{html-mshtmlhelp-project}{halibut.hhp}
 \cfg{html-mshtmlhelp-contents}{halibut.hhc}
 \cfg{html-mshtmlhelp-index}{halibut.hhk}
-
-\versionid $Id$
