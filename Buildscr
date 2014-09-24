@@ -5,19 +5,16 @@ module halibut
 
 ifnexist halibut/charset checkout charset halibut/charset
 
-set Ver
-ifneq "$(RELEASE)" "" set Ver $(RELEASE)
-ifneq "$(SNAPSHOT)" "" set Ver $(SNAPSHOT)
+set Version $(!builddate).$(vcsid)
+ifneq "$(RELEASE)" "" set Version $(RELEASE)
 
 set Rel
 ifneq "$(RELEASE)" "" set Rel RELEASE=$(RELEASE)
-ifneq "$(SNAPSHOT)" "" set Rel RELEASE=$(SNAPSHOT)
 
-set Basename halibut
-ifneq "$(ver)" "" set Basename halibut-$(Ver)
+set Basename halibut-$(Version)
 
 # Make the source archive.
-in halibut do ./release.sh $(Basename) $(Ver)
+in halibut do ./release.sh $(Basename) $(Version)
 
 # Build a local binary of Halibut in order to build the docs. Make
 # sure to tag it with the supplied version number, so that the
