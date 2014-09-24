@@ -2,12 +2,6 @@
  * version.c: version string
  */
 
-#include <stdio.h>
+#include "version.h"
 
-#ifndef VERSION
-#define VER "anonymous build (" __DATE__ " " __TIME__ ")"
-#else
-#define VER "version " VERSION
-#endif
-
-const char *const version = VER;
+const char *const version = VERSION;

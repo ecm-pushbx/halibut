@@ -61,9 +61,7 @@ clean: topclean
 topclean:
 	rm -f *.html output.* *.tar.gz
 
-# Make a release archive. If $(VERSION) is specified, this will
-# also contain a `manifest' file which will be used to decide the
-# version number automatically.
+# Makef a release archive.
 release: release.sh
 	./release.sh $(RELDIR) $(VERSION)
 
@@ -76,17 +74,6 @@ CFLAGS += -Wall -W -ansi -pedantic
 ifdef TEST
 CFLAGS += -DLOGALLOC
 LIBS += -lefence
-endif
-
-ifndef VER
-ifdef VERSION
-VER := $(VERSION)
-endif
-endif
-ifdef VER
-VDEF = -DVERSION=\"$(VER)\"
-else
-VDEF = `(cd $(SRC); md5sum -c manifest >/dev/null 2>&1 && cat version)`
 endif
 
 all: halibut

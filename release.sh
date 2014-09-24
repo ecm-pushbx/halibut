@@ -24,13 +24,6 @@ if ! test -d charset; then
     linkmirror $PWD/../charset reltmp/$RELDIR/charset
 fi
 
-if test "x${VERSION}y" != "xy"; then
-    (cd reltmp/$RELDIR;
-     find . -name '*.[ch]' -exec md5sum {} \;
-     ) > reltmp/$RELDIR/manifest
-    echo "-DVERSION=\"${VERSION}\"" > reltmp/$RELDIR/version;
-fi
-
 tar chzvoCf reltmp $RELDIR.tar.gz $RELDIR
 
 rm -rf reltmp
