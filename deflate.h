@@ -152,6 +152,7 @@ int deflate_decompress_data(deflate_decompress_ctx *ctx,
     A(DEFLATE_ERR_LARGE_HUFTABLE, "over-committed Huffman code space"), \
     A(DEFLATE_ERR_UNCOMP_HDR, "wrongly formatted header in uncompressed block"), \
     A(DEFLATE_ERR_NODISTTABLE, "backward copy encoded in block without distances table"), \
+    A(DEFLATE_ERR_BADDISTCODE, "invalid distance code 30 or 31 found in block"), \
     A(DEFLATE_ERR_CHECKSUM, "incorrect data checksum"), \
     A(DEFLATE_ERR_INLEN, "incorrect data length"), \
     A(DEFLATE_ERR_UNEXPECTED_EOF, "unexpected end of data")
