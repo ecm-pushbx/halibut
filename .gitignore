@@ -1,0 +1,9 @@
+/build.log
+/build.out
+/build
+/doc/*.html
+/doc/halibut.1
+/doc/halibut.info*
+/doc/halibut.pdf
+/doc/halibut.ps
+/doc/halibut.txt
