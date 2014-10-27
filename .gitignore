@@ -1,6 +1,7 @@
 /build.log
 /build.out
 /build
+/halibut
 /doc/*.html
 /doc/halibut.1
 /doc/halibut.info*
