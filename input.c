@@ -1664,7 +1664,9 @@ paragraph *read_input(input *in, indexdata *idx) {
 	    } else {
 		(*reader)(in);
 	    }
-	}
+	} else {
+            err_cantopen(in->filenames[in->currindex]);
+        }
 	in->currindex++;
     }
 
