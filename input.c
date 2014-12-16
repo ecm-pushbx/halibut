@@ -1653,7 +1653,8 @@ paragraph *read_input(input *in, indexdata *idx) {
 		rewind(in->currfp);
 	    }
 	    if (!binary) {
-		fclose(in->currfp);
+                if (in->currfp)
+                    fclose(in->currfp);
 		in->currfp = fopen(in->filenames[in->currindex], "r");
 	    }
 	}
