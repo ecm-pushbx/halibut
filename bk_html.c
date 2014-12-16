@@ -2244,13 +2244,23 @@ static void html_words(htmloutput *ho, word *words, int flags,
 	    paragraph *p;
 	    htmlsect *s;
 
-	    assert(kwl);
-	    p = kwl->para;
-	    s = (htmlsect *)p->private_data;
+            /* kwl should be non-NULL in any sensible case, but if the
+             * input contained an unresolvable xref then it might be
+             * NULL as an after-effect of that */
+	    if (kwl) {
+                p = kwl->para;
+                s = (htmlsect *)p->private_data;
 
-	    assert(s);
+                assert(s);
 
-	    html_href(ho, file, s->file, s->fragments[0]);
+                html_href(ho, file, s->file, s->fragments[0]);
+            } else {
+                /* If kwl is NULL, we must still open an href to
+                 * _somewhere_, because it's easier than remembering
+                 * which one not to close when we come to the
+                 * XrefEnd */
+                html_href(ho, file, file, NULL);
+            }
 	}
 	break;
       case word_HyperEnd:
