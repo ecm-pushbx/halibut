@@ -1771,7 +1771,7 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 		 * buttons: 7/8 (which do nothing useful), and 21/22
 		 * (which work). (Neither of these are exposed in the HHW
 		 * UI, but they work fine in HH.) We use the latter. */
-		"0x60304e,,,,,,,,0\n",
+		"0x70304e,,,,,,,,0\n",
 		conf.hhc_filename ? conf.hhc_filename : "",
 		hhk_filename ? hhk_filename : "",
 		files.head->filename);
