@@ -116,6 +116,7 @@ clean::
 	rm -f *.o halibut core
 
 install:
+	mkdir -p $(prefix)
 	$(INSTALL) -m 755 halibut $(bindir)/halibut
 	$(MAKE) -C ../doc install prefix="$(prefix)" INSTALL="$(INSTALL)"
 
