@@ -17,6 +17,7 @@ halibut.1: manpage.but
 	$(HALIBUT) --man=halibut.1 manpage.but
 
 install:
+	mkdir -p $(man1dir)
 	$(INSTALL) -m 644 halibut.1 $(man1dir)/halibut.1
 
 clean:
