@@ -317,6 +317,8 @@ void pdf_backend(paragraph *sourceform, keywordlist *keywords,
 	    objtext(font, "/Subtype /Type1\n");
 	    objtext(font, "\n/Encoding <<\n/Type /Encoding\n/Differences [");
 
+            prev = 256; /* ensure we compare unequal in 1st iteration */
+
 	    for (i = 0; i < 256; i++) {
 		char buf[20];
 		if (fe->vector[i] == NOGLYPH)
