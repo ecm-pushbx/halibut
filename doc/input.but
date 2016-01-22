@@ -81,7 +81,7 @@ be treated identically:
 \c
 \c Here is some \e{emphasised text}.
 
-\S{input-emph} \c{\\e}: Emphasising text
+\S{input-emph} \c{\\e} and \c{\\s}: Emphasising text
 
 Possibly the most obvious piece of formatting you might want
 to use in a document is \i\e{emphasis}.
