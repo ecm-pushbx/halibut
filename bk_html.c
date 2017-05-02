@@ -138,7 +138,8 @@ typedef struct {
      * ending tags, and writing to the file. It's the lexical
      * level.
      */
-    FILE *fp;
+    void *write_ctx;
+    void (*write)(void *write_ctx, const char *data, int len);
     int charset, restrict_charset;
     charset_state cstate;
     int ver;
@@ -154,6 +155,52 @@ typedef struct {
      */
     int contents_level;
 } htmloutput;
+
+void ho_write_ignore(void *write_ctx, const char *data, int len)
+{
+    IGNORE(write_ctx);
+    IGNORE(data);
+    IGNORE(len);
+}
+void ho_write_file(void *write_ctx, const char *data, int len)
+{
+    FILE *fp = (FILE *)write_ctx;
+    if (len == -1)
+        fclose(fp);
+    else
+        fwrite(data, 1, len, fp);
+}
+void ho_write_stdio(void *write_ctx, const char *data, int len)
+{
+    /* same as write_file, but we don't close the file */
+    FILE *fp = (FILE *)write_ctx;
+    if (len > 0)
+        fwrite(data, 1, len, fp);
+}
+void ho_setup_file(htmloutput *ho, const char *filename)
+{
+    FILE *fp = fopen(filename, "w");
+    if (fp) {
+        ho->write = ho_write_file;
+        ho->write_ctx = fp;
+    } else {
+        err_cantopenw(filename);
+        ho->write = ho_write_ignore; /* saves conditionalising rest of code */
+    }
+}
+void ho_setup_stdio(htmloutput *ho, FILE *fp)
+{
+    ho->write = ho_write_stdio;
+    ho->write_ctx = fp;
+}
+void ho_string(htmloutput *ho, const char *string)
+{
+    ho->write(ho->write_ctx, string, strlen(string));
+}
+void ho_finish(htmloutput *ho)
+{
+    ho->write(ho->write_ctx, NULL, -1);
+}
 
 /*
  * Nasty hacks that modify the behaviour of htmloutput files. All
@@ -885,11 +932,9 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 #define itemname(lt) ( (lt)==LI ? "li" : (lt)==DT ? "dt" : "dd" )
 
 	    if (!strcmp(f->filename, "-"))
-		ho.fp = stdout;
-	    else
-		ho.fp = fopen(f->filename, "w");
-	    if (!ho.fp)
-		err_cantopenw(f->filename);
+                ho_setup_stdio(&ho, stdout);
+            else
+                ho_setup_file(&ho, f->filename);
 
 	    ho.charset = conf.output_charset;
 	    ho.restrict_charset = conf.restrict_charset;
@@ -903,38 +948,33 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 	    /* <!DOCTYPE>. */
 	    switch (conf.htmlver) {
 	      case HTML_3_2:
-		if (ho.fp)
-		    fprintf(ho.fp, "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD "
-			    "HTML 3.2 Final//EN\">\n");
+                ho_string(&ho, "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD "
+                          "HTML 3.2 Final//EN\">\n");
 		break;
 	      case HTML_4:
-		if (ho.fp)
-		    fprintf(ho.fp, "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML"
-			    " 4.01//EN\"\n\"http://www.w3.org/TR/html4/"
-			    "strict.dtd\">\n");
+                ho_string(&ho, "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML"
+                          " 4.01//EN\"\n\"http://www.w3.org/TR/html4/"
+                          "strict.dtd\">\n");
 		break;
 	      case ISO_HTML:
-		if (ho.fp)
-		    fprintf(ho.fp, "<!DOCTYPE HTML PUBLIC \"ISO/IEC "
-			    "15445:2000//DTD HTML//EN\">\n");
+                ho_string(&ho, "<!DOCTYPE HTML PUBLIC \"ISO/IEC "
+                          "15445:2000//DTD HTML//EN\">\n");
 		break;
 	      case XHTML_1_0_TRANSITIONAL:
-		if (ho.fp) {
-		    fprintf(ho.fp, "<?xml version=\"1.0\" encoding=\"%s\"?>\n",
-			    charset_to_mimeenc(conf.output_charset));
-		    fprintf(ho.fp, "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML"
-			    " 1.0 Transitional//EN\"\n\"http://www.w3.org/TR/"
-			    "xhtml1/DTD/xhtml1-transitional.dtd\">\n");
-		}
+                ho_string(&ho, "<?xml version=\"1.0\" encoding=\"");
+                ho_string(&ho, charset_to_mimeenc(conf.output_charset));
+                ho_string(&ho, "\"?>\n"
+                          "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML"
+                          " 1.0 Transitional//EN\"\n\"http://www.w3.org/TR/"
+                          "xhtml1/DTD/xhtml1-transitional.dtd\">\n");
 		break;
 	      case XHTML_1_0_STRICT:
-		if (ho.fp) {
-		    fprintf(ho.fp, "<?xml version=\"1.0\" encoding=\"%s\"?>\n",
-			    charset_to_mimeenc(conf.output_charset));
-		    fprintf(ho.fp, "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML"
-			    " 1.0 Strict//EN\"\n\"http://www.w3.org/TR/xhtml1/"
-			    "DTD/xhtml1-strict.dtd\">\n");
-		}
+                ho_string(&ho, "<?xml version=\"1.0\" encoding=\"");
+                ho_string(&ho, charset_to_mimeenc(conf.output_charset));
+                ho_string(&ho, "%s\"?>\n"
+                          "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML"
+                          " 1.0 Strict//EN\"\n\"http://www.w3.org/TR/xhtml1/"
+                          "DTD/xhtml1-strict.dtd\">\n");
 		break;
 	    }
 
@@ -1719,27 +1759,29 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 	ho.contents_level = 0;
 	ho.hackflags = HO_HACK_QUOTENOTHING;
 
-	ho.fp = fopen(conf.hhp_filename, "w");
-	if (!ho.fp)
-	    err_cantopenw(conf.hhp_filename);
+        ho_setup_file(&ho, conf.hhp_filename);
 
-	fprintf(ho.fp,
-		"[OPTIONS]\n"
-		/* Binary TOC required for Next/Previous nav to work */
-		"Binary TOC=Yes\n"
-		"Compatibility=1.1 or later\n"
-		"Compiled file=%s\n"
-		"Default Window=main\n"
-		"Default topic=%s\n"
-		"Display compile progress=Yes\n"
-		"Full-text search=Yes\n"
-		"Title=", conf.chm_filename, files.head->filename);
+	ho_string(&ho,
+                  "[OPTIONS]\n"
+                  /* Binary TOC required for Next/Previous nav to work */
+                  "Binary TOC=Yes\n"
+                  "Compatibility=1.1 or later\n"
+                  "Compiled file=");
+        ho_string(&ho, conf.chm_filename);
+	ho_string(&ho, "\n"
+                  "Default Window=main\n"
+                  "Default topic=");
+        ho_string(&ho, files.head->filename);
+	ho_string(&ho, "\n"
+                  "Display compile progress=Yes\n"
+                  "Full-text search=Yes\n"
+                  "Title=");
 
 	ho.hacklimit = 255;
 	html_words(&ho, topsect->title->words, NOTHING,
 		   NULL, keywords, &conf);
 
-	fprintf(ho.fp, "\n");
+	ho_string(&ho, "\n");
 
 	/*
 	 * These two entries don't seem to be remotely necessary
@@ -1748,33 +1790,44 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 	 * rather strangely if you try to load the help project
 	 * into that and edit it.
 	 */
-	if (conf.hhc_filename)
-	    fprintf(ho.fp, "Contents file=%s\n", conf.hhc_filename);
-	if (hhk_filename)
-	    fprintf(ho.fp, "Index file=%s\n", hhk_filename);
+	if (conf.hhc_filename) {
+            ho_string(&ho, "Contents file=");
+            ho_string(&ho, conf.hhc_filename);
+            ho_string(&ho, "\n");
+        }
+	if (hhk_filename) {
+            ho_string(&ho, "Index file=");
+            ho_string(&ho, conf.hhk_filename);
+            ho_string(&ho, "\n");
+        }
 
-	fprintf(ho.fp, "\n[WINDOWS]\nmain=\"");
+        ho_string(&ho, "\n[WINDOWS]\nmain=\"");
 
 	ho.hackflags |= HO_HACK_OMITQUOTES;
 	ho.hacklimit = 255;
 	html_words(&ho, topsect->title->words, NOTHING,
 		   NULL, keywords, &conf);
 
-	fprintf(ho.fp, "\",\"%s\",\"%s\",\"%s\",,,,,,"
-		/* This first magic number is fsWinProperties, controlling
-		 * Navigation Pane options and the like.
-		 * Constants HHWIN_PROP_* in htmlhelp.h. */
-		"0x62520,,"
-		/* This second number is fsToolBarFlags, mainly controlling
-		 * toolbar buttons. Constants HHWIN_BUTTON_*.
-		 * NOTE: there are two pairs of bits for Next/Previous
-		 * buttons: 7/8 (which do nothing useful), and 21/22
-		 * (which work). (Neither of these are exposed in the HHW
-		 * UI, but they work fine in HH.) We use the latter. */
-		"0x70304e,,,,,,,,0\n",
-		conf.hhc_filename ? conf.hhc_filename : "",
-		hhk_filename ? hhk_filename : "",
-		files.head->filename);
+        ho_string(&ho, "\",\"");
+        if (conf.hhc_filename)
+            ho_string(&ho, conf.hhc_filename);
+        ho_string(&ho, "\",\"");
+        if (hhk_filename)
+            ho_string(&ho, hhk_filename);
+        ho_string(&ho, "\",\"");
+        ho_string(&ho, files.head->filename);
+        ho_string(&ho, "\",,,,,,"
+                  /* This first magic number is fsWinProperties, controlling
+                   * Navigation Pane options and the like.
+                   * Constants HHWIN_PROP_* in htmlhelp.h. */
+                  "0x62520,,"
+                  /* This second number is fsToolBarFlags, mainly controlling
+                   * toolbar buttons. Constants HHWIN_BUTTON_*.
+                   * NOTE: there are two pairs of bits for Next/Previous
+                   * buttons: 7/8 (which do nothing useful), and 21/22
+                   * (which work). (Neither of these are exposed in the HHW
+                   * UI, but they work fine in HH.) We use the latter. */
+                  "0x70304e,,,,,,,,0\n");
 
 	/*
 	 * The [FILES] section is also not necessary for
@@ -1782,21 +1835,19 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 	 * files just by following links from the given starting
 	 * points), but useful for loading the project into HHW.
 	 */
-	fprintf(ho.fp, "\n[FILES]\n");
-	for (f = files.head; f; f = f->next)
-	    fprintf(ho.fp, "%s\n", f->filename);
+	ho_string(&ho, "\n[FILES]\n");
+	for (f = files.head; f; f = f->next) {
+	    ho_string(&ho, f->filename);
+	    ho_string(&ho, "\n");
+        }
 
-	fclose(ho.fp);
+        ho_finish(&ho);
     }
     if (conf.hhc_filename) {
 	htmlfile *f;
 	htmlsect *s, *a;
 	htmloutput ho;
 	int currdepth = 0;
-
-	ho.fp = fopen(conf.hhc_filename, "w");
-	if (!ho.fp)
-	    err_cantopenw(conf.hhc_filename);
 
 	ho.charset = CS_CP1252;	       /* as far as I know, HHC files are */
 	ho.restrict_charset = CS_CP1252;   /* hardwired to this charset */
@@ -1806,16 +1857,19 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 	ho.contents_level = 0;
 	ho.hackflags = HO_HACK_QUOTEQUOTES;
 
+	ho_setup_file(&ho, conf.hhc_filename);
+
 	/*
 	 * Magic DOCTYPE which seems to work for .HHC files. I'm
 	 * wary of trying to change it!
 	 */
-	fprintf(ho.fp, "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML//EN\">\n"
-		"<HTML><HEAD>\n"
-		"<META HTTP-EQUIV=\"Content-Type\" "
-		"CONTENT=\"text/html; charset=%s\">\n"
-		"</HEAD><BODY><UL>\n",
-		charset_to_mimeenc(conf.output_charset));
+	ho_string(&ho, "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML//EN\">\n"
+                  "<HTML><HEAD>\n"
+                  "<META HTTP-EQUIV=\"Content-Type\" "
+                  "CONTENT=\"text/html; charset=");
+        ho_string(&ho, charset_to_mimeenc(conf.output_charset));
+        ho_string(&ho, "\">\n"
+                  "</HEAD><BODY><UL>\n");
 
 	for (f = files.head; f; f = f->next) {
 	    /*
@@ -1865,33 +1919,34 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 	     * Now write out our contents entry.
 	     */
 	    while (currdepth < depth) {
-		fprintf(ho.fp, "<UL>\n");
+		ho_string(&ho, "<UL>\n");
 		currdepth++;
 	    }
 	    while (currdepth > depth) {
-		fprintf(ho.fp, "</UL>\n");
+		ho_string(&ho, "</UL>\n");
 		currdepth--;
 	    }
-	    /* fprintf(ho.fp, "<!-- depth=%d -->", depth); */
-	    fprintf(ho.fp, "<LI><OBJECT TYPE=\"text/sitemap\">"
-		    "<PARAM NAME=\"Name\" VALUE=\"");
+            ho_string(&ho, "<LI><OBJECT TYPE=\"text/sitemap\">"
+                      "<PARAM NAME=\"Name\" VALUE=\"");
 	    ho.hacklimit = 255;
 	    if (f->first->title)
 		html_words(&ho, f->first->title->words, NOTHING,
 			   NULL, keywords, &conf);
 	    else if (f->first->type == INDEX)
 		html_text(&ho, conf.index_text);
-	    fprintf(ho.fp, "\"><PARAM NAME=\"Local\" VALUE=\"%s\">"
-		    "<PARAM NAME=\"ImageNumber\" VALUE=\"%d\"></OBJECT>\n",
-		    f->filename, leaf ? 11 : 1);
+            ho_string(&ho, "\"><PARAM NAME=\"Local\" VALUE=\"");
+            ho_string(&ho, f->filename);
+            ho_string(&ho, "\"><PARAM NAME=\"ImageNumber\" VALUE=\"");
+            ho_string(&ho, leaf ? "11" : "1");
+            ho_string(&ho, "\"></OBJECT>\n");
 	}
 
 	while (currdepth > 0) {
-	    fprintf(ho.fp, "</UL>\n");
+	    ho_string(&ho, "</UL>\n");
 	    currdepth--;
 	}
 
-	fprintf(ho.fp, "</UL></BODY></HTML>\n");
+	ho_string(&ho, "</UL></BODY></HTML>\n");
 
 	cleanup(&ho);
     }
@@ -1908,10 +1963,6 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 	for (f = files.head; f; f = f->next)
 	    f->temp = 0;
 
-	ho.fp = fopen(hhk_filename, "w");
-	if (!ho.fp)
-	    err_cantopenw(hhk_filename);
-
 	ho.charset = CS_CP1252;	       /* as far as I know, HHK files are */
 	ho.restrict_charset = CS_CP1252;   /* hardwired to this charset */
 	ho.cstate = charset_init_state;
@@ -1920,16 +1971,19 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 	ho.contents_level = 0;
 	ho.hackflags = HO_HACK_QUOTEQUOTES;
 
+	ho_setup_file(&ho, hhk_filename);
+
 	/*
 	 * Magic DOCTYPE which seems to work for .HHK files. I'm
 	 * wary of trying to change it!
 	 */
-	fprintf(ho.fp, "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML//EN\">\n"
-		"<HTML><HEAD>\n"
-		"<META HTTP-EQUIV=\"Content-Type\" "
-		"CONTENT=\"text/html; charset=%s\">\n"
-		"</HEAD><BODY><UL>\n",
-		charset_to_mimeenc(conf.output_charset));
+        ho_string(&ho, "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML//EN\">\n"
+                  "<HTML><HEAD>\n"
+                  "<META HTTP-EQUIV=\"Content-Type\" "
+                  "CONTENT=\"text/html; charset=");
+        ho_string(&ho, charset_to_mimeenc(conf.output_charset));
+        ho_string(&ho, "\">\n"
+                  "</HEAD><BODY><UL>\n");
 
 	/*
 	 * Go through the index terms and output each one.
@@ -1939,12 +1993,12 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 	    int j;
 
 	    if (hi->nrefs > 0) {
-		fprintf(ho.fp, "<LI><OBJECT TYPE=\"text/sitemap\">\n"
-			"<PARAM NAME=\"Name\" VALUE=\"");
+		ho_string(&ho, "<LI><OBJECT TYPE=\"text/sitemap\">\n"
+                          "<PARAM NAME=\"Name\" VALUE=\"");
 		ho.hacklimit = 255;
 		html_words(&ho, entry->text, NOTHING,
 			   NULL, keywords, &conf);
-		fprintf(ho.fp, "\">\n");
+		ho_string(&ho, "\">\n");
 
 		for (j = 0; j < hi->nrefs; j++) {
 		    htmlindexref *hr =
@@ -1955,15 +2009,16 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 		     * reference the same file more than once.
 		     */
 		    if (!hr->section->file->temp) {
-			fprintf(ho.fp, "<PARAM NAME=\"Local\" VALUE=\"%s\">\n",
-				hr->section->file->filename);
+			ho_string(&ho, "<PARAM NAME=\"Local\" VALUE=\"");
+                        ho_string(&ho, hr->section->file->filename);
+                        ho_string(&ho, "\">\n");
 			hr->section->file->temp = 1;
 		    }
 
 		    hr->referenced = TRUE;
 		}
 
-		fprintf(ho.fp, "</OBJECT>\n");
+		ho_string(&ho, "</OBJECT>\n");
 
 		/*
 		 * Now go through those files and re-clear the temp
@@ -1977,7 +2032,7 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 	    }
 	}
 
-	fprintf(ho.fp, "</UL></BODY></HTML>\n");
+	ho_string(&ho, "</UL></BODY></HTML>\n");
 	cleanup(&ho);
     }
 
@@ -2393,18 +2448,16 @@ static void html_charset_cleanup(htmloutput *ho)
 
     bytes = charset_from_unicode(NULL, NULL, outbuf, lenof(outbuf),
 				 ho->charset, &ho->cstate, NULL);
-    if (ho->fp && bytes > 0)
-	fwrite(outbuf, 1, bytes, ho->fp);
+    if (bytes > 0)
+        ho->write(ho->write_ctx, outbuf, bytes);
 }
 
 static void return_mostly_to_neutral(htmloutput *ho)
 {
-    if (ho->fp) {
-	if (ho->state == HO_IN_EMPTY_TAG && is_xhtml(ho->ver)) {
-	    fprintf(ho->fp, " />");
-	} else if (ho->state == HO_IN_EMPTY_TAG || ho->state == HO_IN_TAG) {
-	    fprintf(ho->fp, ">");
-	}
+    if (ho->state == HO_IN_EMPTY_TAG && is_xhtml(ho->ver)) {
+        ho_string(ho, " />");
+    } else if (ho->state == HO_IN_EMPTY_TAG || ho->state == HO_IN_TAG) {
+        ho_string(ho, ">");
     }
 
     ho->state = HO_NEUTRAL;
@@ -2422,68 +2475,68 @@ static void return_to_neutral(htmloutput *ho)
 static void element_open(htmloutput *ho, char const *name)
 {
     return_to_neutral(ho);
-    if (ho->fp)
-	fprintf(ho->fp, "<%s", name);
+    ho_string(ho, "<");
+    ho_string(ho, name);
     ho->state = HO_IN_TAG;
 }
 
 static void element_close(htmloutput *ho, char const *name)
 {
     return_to_neutral(ho);
-    if (ho->fp)
-	fprintf(ho->fp, "</%s>", name);
+    ho_string(ho, "</");
+    ho_string(ho, name);
+    ho_string(ho, ">");
     ho->state = HO_NEUTRAL;
 }
 
 static void element_empty(htmloutput *ho, char const *name)
 {
     return_to_neutral(ho);
-    if (ho->fp)
-	fprintf(ho->fp, "<%s", name);
+    ho_string(ho, "<");
+    ho_string(ho, name);
     ho->state = HO_IN_EMPTY_TAG;
 }
 
 static void html_nl(htmloutput *ho)
 {
     return_to_neutral(ho);
-    if (ho->fp)
-	fputc('\n', ho->fp);
+    ho_string(ho, "\n");
 }
 
 static void html_raw(htmloutput *ho, char *text)
 {
     return_to_neutral(ho);
-    if (ho->fp)
-	fputs(text, ho->fp);
+    ho_string(ho, text);
 }
 
 static void html_raw_as_attr(htmloutput *ho, char *text)
 {
     assert(ho->state == HO_IN_TAG || ho->state == HO_IN_EMPTY_TAG);
-    if (ho->fp) {
-	fputc(' ', ho->fp);
-	fputs(text, ho->fp);
-    }
+    ho_string(ho, " ");
+    ho_string(ho, text);
 }
 
 static void element_attr(htmloutput *ho, char const *name, char const *value)
 {
     html_charset_cleanup(ho);
     assert(ho->state == HO_IN_TAG || ho->state == HO_IN_EMPTY_TAG);
-    if (ho->fp)
-	fprintf(ho->fp, " %s=\"%s\"", name, value);
+    ho_string(ho, " ");
+    ho_string(ho, name);
+    ho_string(ho, "=\"");
+    ho_string(ho, value);
+    ho_string(ho, "\"");
 }
 
 static void element_attr_w(htmloutput *ho, char const *name,
 			   wchar_t const *value)
 {
     html_charset_cleanup(ho);
-    if (ho->fp)
-	fprintf(ho->fp, " %s=\"", name);
+    ho_string(ho, " ");
+    ho_string(ho, name);
+    ho_string(ho, "=\"");
     html_text_limit_internal(ho, value, 0, TRUE, FALSE);
     html_charset_cleanup(ho);
-    if (ho->fp)
-	fputc('"', ho->fp);
+    ho_string(ho, "\"");
 }
 
 static void html_text(htmloutput *ho, wchar_t const *text)
@@ -2536,44 +2589,44 @@ static void html_text_limit_internal(htmloutput *ho, wchar_t const *text,
 	bytes = charset_from_unicode(&text, &lenafter, outbuf, lenof(outbuf),
 				     ho->charset, &ho->cstate, &err);
 	textlen -= (lenbefore - lenafter);
-	if (bytes > 0 && ho->fp)
-	    fwrite(outbuf, 1, bytes, ho->fp);
+	if (bytes > 0)
+            ho->write(ho->write_ctx, outbuf, bytes);
 	if (err) {
 	    /*
 	     * We have encountered a character that cannot be
 	     * displayed in the selected output charset. Therefore,
 	     * we use an HTML numeric entity reference.
 	     */
+            char buf[40];
 	    assert(textlen > 0);
-	    if (ho->fp)
-		fprintf(ho->fp, "&#%ld;", (long int)*text);
+            sprintf(buf, "&#%ld;", (long int)*text);
+            ho_string(ho, buf);
 	    text++, textlen--;
 	} else if (lenafter == 0 && textlen > 0) {
 	    /*
 	     * We have encountered a character which is special to
 	     * HTML.
 	     */
-	    if (ho->fp) {
-		if (*text == L'"' && (ho->hackflags & HO_HACK_OMITQUOTES)) {
-		    fputc('\'', ho->fp);
-		} else if (ho->hackflags & HO_HACK_QUOTENOTHING) {
-		    fputc(*text, ho->fp);
-		} else {
-		    if (*text == L'<')
-			fprintf(ho->fp, "&lt;");
-		    else if (*text == L'>')
-			fprintf(ho->fp, "&gt;");
-		    else if (*text == L'&')
-			fprintf(ho->fp, "&amp;");
-		    else if (*text == L'"')
-			fprintf(ho->fp, "&quot;");
-		    else if (*text == L' ') {
-			assert(nbsp);
-			fprintf(ho->fp, "&nbsp;");
-		    } else
-			assert(!"Can't happen");
-		}
-	    }
+            if (*text == L'"' && (ho->hackflags & HO_HACK_OMITQUOTES)) {
+                ho_string(ho, "'");
+            } else if (ho->hackflags & HO_HACK_QUOTENOTHING) {
+                char c = *text;
+                ho->write(ho->write_ctx, &c, 1);
+            } else {
+                if (*text == L'<')
+                    ho_string(ho, "&lt;");
+                else if (*text == L'>')
+                    ho_string(ho, "&gt;");
+                else if (*text == L'&')
+                    ho_string(ho, "&amp;");
+                else if (*text == L'"')
+                    ho_string(ho, "&quot;");
+                else if (*text == L' ') {
+                    assert(nbsp);
+                    ho_string(ho, "&nbsp;");
+                } else
+                    assert(!"Can't happen");
+            }
 	    text++, textlen--;
 	}
     }
@@ -2582,8 +2635,7 @@ static void html_text_limit_internal(htmloutput *ho, wchar_t const *text,
 static void cleanup(htmloutput *ho)
 {
     return_to_neutral(ho);
-    if (ho->fp && ho->fp != stdout)
-	fclose(ho->fp);
+    ho_finish(ho);
 }
 
 static void html_href(htmloutput *ho, htmlfile *thisfile,
