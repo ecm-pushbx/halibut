@@ -1,7 +1,7 @@
 " Vim syntax file
 " Language:	Halibut
 " Maintainer:	Jacob Nevins <jacobn+vim@chiark.greenend.org.uk>
-" URL:          http://www.chiark.greenend.org.uk/~sgtatham/halibut/
+" URL:          https://www.chiark.greenend.org.uk/~sgtatham/halibut/
 " Filenames:    *.but
 
 " I've never been entirely comfortable with vim's syntax highlighting

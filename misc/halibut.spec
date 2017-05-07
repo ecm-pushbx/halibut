@@ -9,11 +9,11 @@
 Name: halibut
 Version: 0.9
 Release: 1
-Source: http://www.chiark.greenend.org.uk/~sgtatham/halibut/%{name}-%{version}.tar.gz
+Source: https://www.chiark.greenend.org.uk/~sgtatham/halibut/%{name}-%{version}.tar.gz
 Group: Applications/Text
 Summary: TeX-like software manual tool
 License: MIT
-URL: http://www.chiark.greenend.org.uk/~sgtatham/halibut.html
+URL: https://www.chiark.greenend.org.uk/~sgtatham/halibut.html
 BuildRoot: %{_tmppath}/%{name}-%{version}-buildroot
 
 %package vim
