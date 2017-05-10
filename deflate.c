@@ -61,19 +61,10 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#include "halibut.h"
+#include "huffman.h"
+#include "lz77.h"
 #include "deflate.h"
-
-#define snew(type) ( (type *) malloc(sizeof(type)) )
-#define snewn(n, type) ( (type *) malloc((n) * sizeof(type)) )
-#define sresize(x, n, type) ( (type *) realloc((x), (n) * sizeof(type)) )
-#define sfree(x) ( free((x)) )
-
-#define lenof(x) (sizeof((x)) / sizeof(*(x)))
-
-#ifndef FALSE
-#define FALSE 0
-#define TRUE (!FALSE)
-#endif
 
 /* ----------------------------------------------------------------------
  * This file can be compiled in a number of modes.
@@ -107,330 +98,28 @@ int analyse_level = 0;
 #endif
 
 /* ----------------------------------------------------------------------
- * Basic LZ77 code. This bit is designed modularly, so it could be
- * ripped out and used in a different LZ77 compressor. Go to it,
- * and good luck :-)
- */
-
-struct LZ77InternalContext;
-struct LZ77Context {
-    struct LZ77InternalContext *ictx;
-    void *userdata;
-    void (*literal) (struct LZ77Context * ctx, unsigned char c);
-    void (*match) (struct LZ77Context * ctx, int distance, int len);
-};
-
-/*
- * Initialise the private fields of an LZ77Context. It's up to the
- * user to initialise the public fields.
- */
-static int lz77_init(struct LZ77Context *ctx);
-
-/*
- * Supply data to be compressed. Will update the private fields of
- * the LZ77Context, and will call literal() and match() to output.
- * If `compress' is FALSE, it will never emit a match, but will
- * instead call literal() for everything.
- */
-static void lz77_compress(struct LZ77Context *ctx,
-			  const unsigned char *data, int len, int compress);
-
-/*
- * Modifiable parameters.
- */
-#define WINSIZE 32768		       /* window size. Must be power of 2! */
-#define HASHMAX 2039		       /* one more than max hash value */
-#define MAXMATCH 32		       /* how many matches we track */
-#define HASHCHARS 3		       /* how many chars make a hash */
-
-/*
- * This compressor takes a less slapdash approach than the
- * gzip/zlib one. Rather than allowing our hash chains to fall into
- * disuse near the far end, we keep them doubly linked so we can
- * _find_ the far end, and then every time we add a new byte to the
- * window (thus rolling round by one and removing the previous
- * byte), we can carefully remove the hash chain entry.
- */
-
-#define INVALID -1		       /* invalid hash _and_ invalid offset */
-struct WindowEntry {
-    short next, prev;		       /* array indices within the window */
-    short hashval;
-};
-
-struct HashEntry {
-    short first;		       /* window index of first in chain */
-};
-
-struct Match {
-    int distance, len;
-};
-
-struct LZ77InternalContext {
-    struct WindowEntry win[WINSIZE];
-    unsigned char data[WINSIZE];
-    int winpos;
-    struct HashEntry hashtab[HASHMAX];
-    unsigned char pending[HASHCHARS];
-    int npending;
-};
-
-static int lz77_hash(const unsigned char *data)
-{
-    return (257 * data[0] + 263 * data[1] + 269 * data[2]) % HASHMAX;
-}
-
-static int lz77_init(struct LZ77Context *ctx)
-{
-    struct LZ77InternalContext *st;
-    int i;
-
-    st = snew(struct LZ77InternalContext);
-    if (!st)
-	return 0;
-
-    ctx->ictx = st;
-
-    for (i = 0; i < WINSIZE; i++)
-	st->win[i].next = st->win[i].prev = st->win[i].hashval = INVALID;
-    for (i = 0; i < HASHMAX; i++)
-	st->hashtab[i].first = INVALID;
-    st->winpos = 0;
-
-    st->npending = 0;
-
-    return 1;
-}
-
-static void lz77_advance(struct LZ77InternalContext *st,
-			 unsigned char c, int hash)
-{
-    int off;
-
-    /*
-     * Remove the hash entry at winpos from the tail of its chain,
-     * or empty the chain if it's the only thing on the chain.
-     */
-    if (st->win[st->winpos].prev != INVALID) {
-	st->win[st->win[st->winpos].prev].next = INVALID;
-    } else if (st->win[st->winpos].hashval != INVALID) {
-	st->hashtab[st->win[st->winpos].hashval].first = INVALID;
-    }
-
-    /*
-     * Create a new entry at winpos and add it to the head of its
-     * hash chain.
-     */
-    st->win[st->winpos].hashval = hash;
-    st->win[st->winpos].prev = INVALID;
-    off = st->win[st->winpos].next = st->hashtab[hash].first;
-    st->hashtab[hash].first = st->winpos;
-    if (off != INVALID)
-	st->win[off].prev = st->winpos;
-    st->data[st->winpos] = c;
-
-    /*
-     * Advance the window pointer.
-     */
-    st->winpos = (st->winpos + 1) & (WINSIZE - 1);
-}
-
-#define CHARAT(k) ( (k)<0 ? st->data[(st->winpos+k)&(WINSIZE-1)] : data[k] )
-
-static void lz77_compress(struct LZ77Context *ctx,
-			  const unsigned char *data, int len, int compress)
-{
-    struct LZ77InternalContext *st = ctx->ictx;
-    int i, hash, distance, off, nmatch, matchlen, advance;
-    struct Match defermatch, matches[MAXMATCH];
-    int deferchr;
-
-    /*
-     * Add any pending characters from last time to the window. (We
-     * might not be able to.)
-     */
-    for (i = 0; i < st->npending; i++) {
-	unsigned char foo[HASHCHARS];
-	int j;
-	if (len + st->npending - i < HASHCHARS) {
-	    /* Update the pending array. */
-	    for (j = i; j < st->npending; j++)
-		st->pending[j - i] = st->pending[j];
-	    break;
-	}
-	for (j = 0; j < HASHCHARS; j++)
-	    foo[j] = (i + j < st->npending ? st->pending[i + j] :
-		      data[i + j - st->npending]);
-	lz77_advance(st, foo[0], lz77_hash(foo));
-    }
-    st->npending -= i;
-
-    defermatch.len = 0;
-    deferchr = '\0';
-    while (len > 0) {
-
-	/* Don't even look for a match, if we're not compressing. */
-	if (compress && len >= HASHCHARS) {
-	    /*
-	     * Hash the next few characters.
-	     */
-	    hash = lz77_hash(data);
-
-	    /*
-	     * Look the hash up in the corresponding hash chain and see
-	     * what we can find.
-	     */
-	    nmatch = 0;
-	    for (off = st->hashtab[hash].first;
-		 off != INVALID; off = st->win[off].next) {
-		/* distance = 1       if off == st->winpos-1 */
-		/* distance = WINSIZE if off == st->winpos   */
-		distance =
-		    WINSIZE - (off + WINSIZE - st->winpos) % WINSIZE;
-		for (i = 0; i < HASHCHARS; i++)
-		    if (CHARAT(i) != CHARAT(i - distance))
-			break;
-		if (i == HASHCHARS) {
-		    matches[nmatch].distance = distance;
-		    matches[nmatch].len = 3;
-		    if (++nmatch >= MAXMATCH)
-			break;
-		}
-	    }
-	} else {
-	    nmatch = 0;
-	    hash = INVALID;
-	}
-
-	if (nmatch > 0) {
-	    /*
-	     * We've now filled up matches[] with nmatch potential
-	     * matches. Follow them down to find the longest. (We
-	     * assume here that it's always worth favouring a
-	     * longer match over a shorter one.)
-	     */
-	    matchlen = HASHCHARS;
-	    while (matchlen < len) {
-		int j;
-		for (i = j = 0; i < nmatch; i++) {
-		    if (CHARAT(matchlen) ==
-			CHARAT(matchlen - matches[i].distance)) {
-			matches[j++] = matches[i];
-		    }
-		}
-		if (j == 0)
-		    break;
-		matchlen++;
-		nmatch = j;
-	    }
-
-	    /*
-	     * We've now got all the longest matches. We favour the
-	     * shorter distances, which means we go with matches[0].
-	     * So see if we want to defer it or throw it away.
-	     */
-	    matches[0].len = matchlen;
-	    if (defermatch.len > 0) {
-		if (matches[0].len > defermatch.len + 1) {
-		    /* We have a better match. Emit the deferred char,
-		     * and defer this match. */
-		    ctx->literal(ctx, (unsigned char) deferchr);
-		    defermatch = matches[0];
-		    deferchr = data[0];
-		    advance = 1;
-		} else {
-		    /* We don't have a better match. Do the deferred one. */
-		    ctx->match(ctx, defermatch.distance, defermatch.len);
-		    advance = defermatch.len - 1;
-		    defermatch.len = 0;
-		}
-	    } else {
-		/* There was no deferred match. Defer this one. */
-		defermatch = matches[0];
-		deferchr = data[0];
-		advance = 1;
-	    }
-	} else {
-	    /*
-	     * We found no matches. Emit the deferred match, if
-	     * any; otherwise emit a literal.
-	     */
-	    if (defermatch.len > 0) {
-		ctx->match(ctx, defermatch.distance, defermatch.len);
-		advance = defermatch.len - 1;
-		defermatch.len = 0;
-	    } else {
-		ctx->literal(ctx, data[0]);
-		advance = 1;
-	    }
-	}
-
-	/*
-	 * Now advance the position by `advance' characters,
-	 * keeping the window and hash chains consistent.
-	 */
-	while (advance > 0) {
-	    if (len >= HASHCHARS) {
-		lz77_advance(st, *data, lz77_hash(data));
-	    } else {
-		st->pending[st->npending++] = *data;
-	    }
-	    data++;
-	    len--;
-	    advance--;
-	}
-    }
-}
-
-/* ----------------------------------------------------------------------
  * Deflate functionality common to both compression and decompression.
  */
+
+#define DWINSIZE 32768
 
 static const unsigned char lenlenmap[] = {
     16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15
 };
 
-#define MAXCODELEN 16
-
 /*
- * Given a sequence of Huffman code lengths, compute the actual
- * codes, in the final form suitable for feeding to outbits (i.e.
- * already bit-mirrored).
- *
- * Returns the maximum code length found. Can also return -1 to
- * indicate the table was overcommitted (too many or too short
- * codes to exactly cover the possible space), or -2 to indicate it
- * was undercommitted (too few or too long codes).
+ * Given a sequence of Huffman code lengths, compute the actual codes
+ * in the final form suitable for feeding to outbits (i.e. already
+ * bit-mirrored). Returns the same as compute_huffman_codes.
  */
-static int hufcodes(const unsigned char *lengths, int *codes, int nsyms)
+static int deflate_hufcodes(const unsigned char *lengths,
+                            int *codes, int nsyms)
 {
-    int count[MAXCODELEN], startcode[MAXCODELEN];
-    int code, maxlen;
+    int maxlen = compute_huffman_codes(lengths, codes, nsyms);
     int i, j;
 
-    /* Count the codes of each length. */
-    maxlen = 0;
-    for (i = 1; i < MAXCODELEN; i++)
-	count[i] = 0;
     for (i = 0; i < nsyms; i++) {
-	count[lengths[i]]++;
-	if (maxlen < lengths[i])
-	    maxlen = lengths[i];
-    }
-    /* Determine the starting code for each length block. */
-    code = 0;
-    for (i = 1; i < MAXCODELEN; i++) {
-	startcode[i] = code;
-	code += count[i];
-	if (code > (1 << i))
-	    maxlen = -1;	       /* overcommitted */
-	code <<= 1;
-    }
-    if (code < (1 << MAXCODELEN))
-	maxlen = -2;		       /* undercommitted */
-    /* Determine the code for each symbol. Mirrored, of course. */
-    for (i = 0; i < nsyms; i++) {
-	code = startcode[lengths[i]]++;
+        int code = codes[i];
 	codes[i] = 0;
 	for (j = 0; j < lengths[i]; j++) {
 	    codes[i] = (codes[i] << 1) | (code & 1);
@@ -680,289 +369,6 @@ static void outbits(deflate_compress_ctx *out,
 }
 
 /*
- * Binary heap functions used by buildhuf(). Each one assumes the
- * heap to be stored in an array of ints, with two ints per node
- * (user data and key). They take in the old heap length, and
- * return the new one.
- */
-#define HEAPPARENT(x) (((x)-2)/4*2)
-#define HEAPLEFT(x) ((x)*2+2)
-#define HEAPRIGHT(x) ((x)*2+4)
-static int addheap(int *heap, int len, int userdata, int key)
-{
-    int me, dad, tmp;
-
-    me = len;
-    heap[len++] = userdata;
-    heap[len++] = key;
-
-    while (me > 0) {
-	dad = HEAPPARENT(me);
-	if (heap[me+1] < heap[dad+1]) {
-	    tmp = heap[me]; heap[me] = heap[dad]; heap[dad] = tmp;
-	    tmp = heap[me+1]; heap[me+1] = heap[dad+1]; heap[dad+1] = tmp;
-	    me = dad;
-	} else
-	    break;
-    }
-
-    return len;
-}
-static int rmheap(int *heap, int len, int *userdata, int *key)
-{
-    int me, lc, rc, c, tmp;
-
-    len -= 2;
-    *userdata = heap[0];
-    *key = heap[1];
-    heap[0] = heap[len];
-    heap[1] = heap[len+1];
-
-    me = 0;
-
-    while (1) {
-	lc = HEAPLEFT(me);
-	rc = HEAPRIGHT(me);
-	if (lc >= len)
-	    break;
-	else if (rc >= len || heap[lc+1] < heap[rc+1])
-	    c = lc;
-	else
-	    c = rc;
-	if (heap[me+1] > heap[c+1]) {
-	    tmp = heap[me]; heap[me] = heap[c]; heap[c] = tmp;
-	    tmp = heap[me+1]; heap[me+1] = heap[c+1]; heap[c+1] = tmp;
-	} else
-	    break;
-	me = c;
-    }
-
-    return len;
-}
-
-/*
- * The core of the Huffman algorithm: takes an input array of
- * symbol frequencies, and produces an output array of code
- * lengths.
- *
- * This is basically a generic Huffman implementation, but it has
- * one zlib-related quirk which is that it caps the output code
- * lengths to fit in an unsigned char (which is safe since Deflate
- * will reject anything longer than 15 anyway). Anyone wanting to
- * rip it out and use it in another context should find that easy
- * to remove.
- */
-#define HUFMAX 286
-static void buildhuf(const int *freqs, unsigned char *lengths, int nsyms)
-{
-    int parent[2*HUFMAX-1];
-    int length[2*HUFMAX-1];
-    int heap[2*HUFMAX];
-    int heapsize;
-    int i, j, n;
-    int si, sj;
-
-    assert(nsyms <= HUFMAX);
-
-    memset(parent, 0, sizeof(parent));
-
-    /*
-     * Begin by building the heap.
-     */
-    heapsize = 0;
-    for (i = 0; i < nsyms; i++)
-	if (freqs[i] > 0)	       /* leave unused symbols out totally */
-	    heapsize = addheap(heap, heapsize, i, freqs[i]);
-
-    /*
-     * Now repeatedly take two elements off the heap and merge
-     * them.
-     */
-    n = HUFMAX;
-    while (heapsize > 2) {
-	heapsize = rmheap(heap, heapsize, &i, &si);
-	heapsize = rmheap(heap, heapsize, &j, &sj);
-	parent[i] = n;
-	parent[j] = n;
-	heapsize = addheap(heap, heapsize, n, si + sj);
-	n++;
-    }
-
-    /*
-     * Now we have our tree, in the form of a link from each node
-     * to the index of its parent. Count back down the tree to
-     * determine the code lengths.
-     */
-    memset(length, 0, sizeof(length));
-    /* The tree root has length 0 after that, which is correct. */
-    for (i = n-1; i-- ;)
-	if (parent[i] > 0)
-	    length[i] = 1 + length[parent[i]];
-
-    /*
-     * And that's it. (Simple, wasn't it?) Copy the lengths into
-     * the output array and leave.
-     * 
-     * Here we cap lengths to fit in unsigned char.
-     */
-    for (i = 0; i < nsyms; i++)
-	lengths[i] = (length[i] > 255 ? 255 : length[i]);
-}
-
-/*
- * Wrapper around buildhuf() which enforces the Deflate restriction
- * that no code length may exceed 15 bits, or 7 for the auxiliary
- * code length alphabet. This function has the same calling
- * semantics as buildhuf(), except that it might modify the freqs
- * array.
- */
-static void deflate_buildhuf(int *freqs, unsigned char *lengths,
-			     int nsyms, int limit)
-{
-    int smallestfreq, totalfreq, nactivesyms;
-    int num, denom, adjust;
-    int i;
-    int maxprob;
-
-    /*
-     * Nasty special case: if the frequency table has fewer than
-     * two non-zero elements, we must invent some, because we can't
-     * have fewer than one bit encoding a symbol.
-     */
-    assert(nsyms >= 2);
-    {
-	int count = 0;
-	for (i = 0; i < nsyms; i++)
-	    if (freqs[i] > 0)
-		count++;
-	if (count < 2) {
-	    for (i = 0; i < nsyms && count > 0; i++)
-		if (freqs[i] == 0) {
-		    freqs[i] = 1;
-		    count--;
-		}
-	}
-    }
-
-    /*
-     * First, try building the Huffman table the normal way. If
-     * this works, it's optimal, so we don't want to mess with it.
-     */
-    buildhuf(freqs, lengths, nsyms);
-
-    for (i = 0; i < nsyms; i++)
-	if (lengths[i] > limit)
-	    break;
-
-    if (i == nsyms)
-	return;			       /* OK */
-
-    /*
-     * The Huffman algorithm can only ever generate a code length
-     * of N bits or more if there is a symbol whose probability is
-     * less than the reciprocal of the (N+2)th Fibonacci number
-     * (counting from F_0=0 and F_1=1), i.e. 1/2584 for N=16, or
-     * 1/55 for N=8. (This is a necessary though not sufficient
-     * condition.)
-     *
-     * Why is this? Well, consider the input symbol with the
-     * smallest probability. Let that probability be x. In order
-     * for this symbol to have a code length of at least 1, the
-     * Huffman algorithm will have to merge it with some other
-     * node; and since x is the smallest probability, the node it
-     * gets merged with must be at least x. Thus, the probability
-     * of the resulting combined node will be at least 2x. Now in
-     * order for our node to reach depth 2, this 2x-node must be
-     * merged again. But what with? We can't assume the node it
-     * merges with is at least 2x, because this one might only be
-     * the _second_ smallest remaining node. But we do know the
-     * node it merges with must be at least x, so our order-2
-     * internal node is at least 3x.
-     *
-     * How small a node can merge with _that_ to get an order-3
-     * internal node? Well, it must be at least 2x, because if it
-     * was smaller than that then it would have been one of the two
-     * smallest nodes in the previous step and been merged at that
-     * point. So at least 3x, plus at least 2x, comes to at least
-     * 5x for an order-3 node.
-     *
-     * And so it goes on: at every stage we must merge our current
-     * node with a node at least as big as the bigger of this one's
-     * two parents, and from this starting point that gives rise to
-     * the Fibonacci sequence. So we find that in order to have a
-     * node n levels deep (i.e. a maximum code length of n), the
-     * overall probability of the root of the entire tree must be
-     * at least F_{n+2} times the probability of the rarest symbol.
-     * In other words, since the overall probability is 1, it is a
-     * necessary condition for a code length of 16 or more that
-     * there must be at least one symbol with probability <=
-     * 1/F_18.
-     *
-     * (To demonstrate that a probability this big really can give
-     * rise to a code length of 16, consider the set of input
-     * frequencies { 1-epsilon, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55,
-     * 89, 144, 233, 377, 610, 987 }, for arbitrarily small
-     * epsilon.)
-     *
-     * So here buildhuf() has returned us an overlong code. So to
-     * ensure it doesn't do it again, we add a constant to all the
-     * (non-zero) symbol frequencies, causing them to become more
-     * balanced and removing the danger. We can then feed the
-     * results back to the standard buildhuf() and be
-     * assert()-level confident that the resulting code lengths
-     * contain nothing outside the permitted range.
-     */
-    assert(limit == 15 || limit == 7);
-    maxprob = (limit == 15 ? 2584 : 55);   /* no point in computing full F_n */
-    totalfreq = nactivesyms = 0;
-    smallestfreq = -1;
-    for (i = 0; i < nsyms; i++) {
-	if (freqs[i] == 0)
-	    continue;
-	if (smallestfreq < 0 || smallestfreq > freqs[i])
-	    smallestfreq = freqs[i];
-	totalfreq += freqs[i];
-	nactivesyms++;
-    }
-    assert(smallestfreq <= totalfreq / maxprob);
-
-    /*
-     * We want to find the smallest integer `adjust' such that
-     * (totalfreq + nactivesyms * adjust) / (smallestfreq +
-     * adjust) is less than maxprob. A bit of algebra tells us
-     * that the threshold value is equal to
-     *
-     *   totalfreq - maxprob * smallestfreq
-     *   ----------------------------------
-     *          maxprob - nactivesyms
-     *
-     * rounded up, of course. And we'll only even be trying
-     * this if
-     */
-    num = totalfreq - smallestfreq * maxprob;
-    denom = maxprob - nactivesyms;
-    adjust = (num + denom - 1) / denom;
-
-    /*
-     * Now add `adjust' to all the input symbol frequencies.
-     */
-    for (i = 0; i < nsyms; i++)
-	if (freqs[i] != 0)
-	    freqs[i] += adjust;
-
-    /*
-     * Rebuild the Huffman tree...
-     */
-    buildhuf(freqs, lengths, nsyms);
-
-    /*
-     * ... and this time it ought to be OK.
-     */
-    for (i = 0; i < nsyms; i++)
-	assert(lengths[i] <= limit);
-}
-
-/*
  * Compute the bit length of a symbol, given the three Huffman
  * trees.
  */
@@ -1079,10 +485,10 @@ static void outblock(deflate_compress_ctx *out,
 	    freqs2[sym]++;
 	}
     }
-    deflate_buildhuf(freqs1, len1, lenof(freqs1), 15);
-    deflate_buildhuf(freqs2, len2, lenof(freqs2), 15);
-    hufcodes(len1, code1, lenof(freqs1));
-    hufcodes(len2, code2, lenof(freqs2));
+    build_huffman_tree(freqs1, len1, lenof(freqs1), 15);
+    build_huffman_tree(freqs2, len2, lenof(freqs2), 15);
+    deflate_hufcodes(len1, code1, lenof(freqs1));
+    deflate_hufcodes(len2, code2, lenof(freqs2));
 
     /*
      * Determine HLIT and HDIST.
@@ -1194,8 +600,8 @@ static void outblock(deflate_compress_ctx *out,
 	    freqs3[sym]++;
 	}
     }
-    deflate_buildhuf(freqs3, len3, lenof(freqs3), 7);
-    hufcodes(len3, code3, lenof(freqs3));
+    build_huffman_tree(freqs3, len3, lenof(freqs3), 7);
+    deflate_hufcodes(len3, code3, lenof(freqs3));
 
     /*
      * Reorder the code length codes into transmission order, and
@@ -1550,7 +956,7 @@ deflate_compress_ctx *deflate_compress_new(int type)
     deflate_compress_ctx *out;
     struct LZ77Context *ectx = snew(struct LZ77Context);
 
-    lz77_init(ectx);
+    lz77_init(ectx, DWINSIZE);
     ectx->literal = literal;
     ectx->match = match;
 
@@ -1584,8 +990,10 @@ deflate_compress_ctx *deflate_compress_new(int type)
 	for (i = 0; i < (int)lenof(out->static_len2); i++)
 	    out->static_len2[i] = 5;
     }
-    hufcodes(out->static_len1, out->static_code1, lenof(out->static_code1));
-    hufcodes(out->static_len2, out->static_code2, lenof(out->static_code2));
+    deflate_hufcodes(out->static_len1, out->static_code1,
+                     lenof(out->static_code1));
+    deflate_hufcodes(out->static_len2, out->static_code2,
+                     lenof(out->static_code2));
     out->sht.len_litlen = out->static_len1;
     out->sht.len_dist = out->static_len2;
     out->sht.len_codelen = NULL;
@@ -1604,7 +1012,7 @@ void deflate_compress_free(deflate_compress_ctx *out)
     struct LZ77Context *ectx = out->lzc;
 
     sfree(out->syms);
-    sfree(ectx->ictx);
+    lz77_cleanup(ectx);
     sfree(ectx);
     sfree(out);
 }
@@ -1773,8 +1181,6 @@ struct table {
 
 #define MAXSYMS 288
 
-#define DWINSIZE 32768
-
 /*
  * Build a single-level decode table for elements
  * [minlength,maxlength) of the provided code/length tables, and
@@ -1852,7 +1258,7 @@ static struct table *mktable(unsigned char *lengths, int nlengths,
     }
 #endif
 
-    maxlen = hufcodes(lengths, codes, nlengths);
+    maxlen = deflate_hufcodes(lengths, codes, nlengths);
 
     if (maxlen < 0) {
 	*error = (maxlen == -1 ? DEFLATE_ERR_LARGE_HUFTABLE :
