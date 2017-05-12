@@ -971,7 +971,7 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 	      case XHTML_1_0_STRICT:
                 ho_string(&ho, "<?xml version=\"1.0\" encoding=\"");
                 ho_string(&ho, charset_to_mimeenc(conf.output_charset));
-                ho_string(&ho, "%s\"?>\n"
+                ho_string(&ho, "\"?>\n"
                           "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML"
                           " 1.0 Strict//EN\"\n\"http://www.w3.org/TR/xhtml1/"
                           "DTD/xhtml1-strict.dtd\">\n");
