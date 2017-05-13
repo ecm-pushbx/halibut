@@ -25,10 +25,9 @@ Currently Halibut supports the following output formats:
 
 \b PostScript.
 
-\b Old-style Windows Help (\cw{.HLP}).
+\b Windows HTML Help (\cw{.CHM}).
 
-(By setting suitable options, the HTML output can also be made
-suitable for feeding to the newer-style Windows HTML Help compiler.)
+\b Old-style Windows Help (\cw{.HLP}).
 
 \H{intro-features} Features supported by Halibut
 

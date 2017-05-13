@@ -43,13 +43,21 @@ produced as output; this, and the file names, will be as specified
 in the input files, or given a set of default names starting with
 \c{Contents.html} if none is specified at all.
 
+\dt \cw{--chm}[\cw{=}\e{filename}]
+
+\dd Makes Halibut generate an output file in Windows HTML Help
+format. If the optional \e{filename} parameter is supplied, the output
+help file will be given that name. Otherwise, the name of the output
+help file will be as specified in the input files, or \c{output.chm}
+if none is specified at all.
+
 \dt \cw{--winhelp}[\cw{=}\e{filename}]
 
-\dd Makes Halibut generate an output file in Windows Help format. If
-the optional \e{filename} parameter is supplied, the output help
-file will be given that name. Otherwise, the name of the output help
-file will be as specified in the input files, or \c{output.hlp} if
-none is specified at all.
+\dd Makes Halibut generate an output file in old-style Windows Help
+format. If the optional \e{filename} parameter is supplied, the output
+help file will be given that name. Otherwise, the name of the output
+help file will be as specified in the input files, or \c{output.hlp}
+if none is specified at all.
 
 \lcont{
 The output help file must have a name ending in \c{.hlp}; if it does

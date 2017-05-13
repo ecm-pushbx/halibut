@@ -35,6 +35,7 @@ in halibut/doc do make
 deliver halibut/*.tar.gz $@
 deliver halibut/doc/halibut.pdf $@
 deliver halibut/doc/halibut.txt $@
+deliver halibut/doc/halibut.chm $@
 deliver halibut/doc/*.html $@
 
 # FIXME: it'd be nice to add a Windows delegation here so we can

@@ -322,6 +322,8 @@ void err_sfnttablevers(const filepos *fpos, const char *sp);
 void err_sfntbadhdr(const filepos *fpos);
 /* sfnt cmap references bad glyph */
 void err_sfntbadglyph(const filepos *fpos, unsigned wc);
+/* CHM internal file names can't start with # or $ */
+void err_chm_badname(const filepos *fpos, const char *sp);
 
 /*
  * malloc.c
@@ -563,7 +565,9 @@ paragraph *text_config_filename(char *filename);
  * bk_html.c
  */
 void html_backend(paragraph *, keywordlist *, indexdata *, void *);
+void chm_backend(paragraph *, keywordlist *, indexdata *, void *);
 paragraph *html_config_filename(char *filename);
+paragraph *chm_config_filename(char *filename);
 
 /*
  * bk_whlp.c

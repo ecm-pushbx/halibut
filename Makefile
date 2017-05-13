@@ -95,7 +95,7 @@ include $(LIBCHARSET_SRCDIR)Makefile
 MODULES := main malloc ustring error help licence version misc tree234
 MODULES += input in_afm in_pf in_sfnt keywords contents index biblio
 MODULES += bk_text bk_html bk_whlp bk_man bk_info bk_paper bk_ps bk_pdf
-MODULES += winhelp deflate lz77 huffman psdata wcwidth
+MODULES += winhelp winchm deflate lzx lz77 huffman psdata wcwidth
 
 OBJECTS := $(addsuffix .o,$(MODULES)) $(LIBCHARSET_OBJS)
 DEPS := $(addsuffix .d,$(MODULES))

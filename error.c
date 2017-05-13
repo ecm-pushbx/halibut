@@ -363,3 +363,9 @@ void err_sfntbadglyph(const filepos *fpos, unsigned wc)
              "warning: character U+%04X references a non-existent glyph",
              wc);
 }
+
+void err_chm_badname(const filepos *fpos, const char *sp)
+{
+    do_error(fpos, "CHM internal file name `%s' begins with"
+             " a reserved character", sp);
+}

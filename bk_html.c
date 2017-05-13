@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <limits.h>
 #include "halibut.h"
+#include "winchm.h"
 
 #define is_heading_type(type) ( (type) == para_Title || \
 				(type) == para_Chapter || \
@@ -57,6 +58,8 @@ typedef struct {
     char *chm_filename, *hhp_filename, *hhc_filename, *hhk_filename;
     char **template_fragments;
     int ntfragments;
+    char **chm_extrafiles, **chm_extranames;
+    int nchmextrafiles, chmextrafilesize;
     char *head_end, *body_start, *body_end, *addr_start, *addr_end;
     char *body_tag, *nav_attr;
     wchar_t *author, *description;
@@ -94,6 +97,10 @@ struct htmlfile {
      * more than once.
      */
     int temp;
+    /*
+     * CHM section structure, if we're generating a CHM.
+     */
+    struct chm_section *chmsect;
 };
 
 struct htmlsect {
@@ -193,6 +200,48 @@ void ho_setup_stdio(htmloutput *ho, FILE *fp)
     ho->write = ho_write_stdio;
     ho->write_ctx = fp;
 }
+
+struct chm_output {
+    struct chm *chm;
+    char *filename;
+    rdstringc rs;
+};
+void ho_write_chm(void *write_ctx, const char *data, int len)
+{
+    struct chm_output *co = (struct chm_output *)write_ctx;
+    if (len == -1) {
+        chm_add_file(co->chm, co->filename, co->rs.text, co->rs.pos);
+        sfree(co->filename);
+        sfree(co->rs.text);
+        sfree(co);
+    } else {
+        rdaddsn(&co->rs, data, len);
+    }
+}
+void ho_setup_chm(htmloutput *ho, struct chm *chm, const char *filename)
+{
+    struct chm_output *co = snew(struct chm_output);
+
+    co->chm = chm;
+    co->rs = empty_rdstringc;
+    co->filename = dupstr(filename);
+
+    ho->write_ctx = co;
+    ho->write = ho_write_chm;
+}
+
+void ho_write_rdstringc(void *write_ctx, const char *data, int len)
+{
+    rdstringc *rs = (rdstringc *)write_ctx;
+    if (len > 0)
+        rdaddsn(rs, data, len);
+}
+void ho_setup_rdstringc(htmloutput *ho, rdstringc *rs)
+{
+    ho->write_ctx = rs;
+    ho->write = ho_write_rdstringc;
+}
+
 void ho_string(htmloutput *ho, const char *string)
 {
     ho->write(ho->write_ctx, string, strlen(string));
@@ -286,14 +335,15 @@ static void html_section_title(htmloutput *ho, htmlsect *s,
 			       htmlfile *thisfile, keywordlist *keywords,
 			       htmlconfig *cfg, int real);
 
-static htmlconfig html_configure(paragraph *source) {
+static htmlconfig html_configure(paragraph *source, int chm_mode)
+{
     htmlconfig ret;
     paragraph *p;
 
     /*
      * Defaults.
      */
-    ret.leaf_level = 2;
+    ret.leaf_level = chm_mode ? -1 /* infinite */ : 2;
     ret.achapter.just_numbers = FALSE;
     ret.achapter.number_at_all = TRUE;
     ret.achapter.number_suffix = L": ";
@@ -305,20 +355,29 @@ static htmlconfig html_configure(paragraph *source) {
     ret.ncdepths = 0;
     ret.contents_depths = 0;
     ret.visible_version_id = TRUE;
-    ret.address_section = TRUE;
+    ret.address_section = chm_mode ? FALSE : TRUE;
     ret.leaf_contains_contents = FALSE;
     ret.leaf_smallest_contents = 4;
-    ret.navlinks = TRUE;
+    ret.navlinks = chm_mode ? FALSE : TRUE;
     ret.rellinks = TRUE;
     ret.single_filename = dupstr("Manual.html");
     ret.contents_filename = dupstr("Contents.html");
     ret.index_filename = dupstr("IndexPage.html");
     ret.template_filename = dupstr("%n.html");
-    ret.chm_filename = ret.hhp_filename = NULL;
-    ret.hhc_filename = ret.hhk_filename = NULL;
+    if (chm_mode) {
+        ret.chm_filename = dupstr("output.chm");
+        ret.hhc_filename = dupstr("contents.hhc");
+        ret.hhk_filename = dupstr("index.hhk");
+        ret.hhp_filename = NULL;
+    } else {
+        ret.chm_filename = ret.hhp_filename = NULL;
+        ret.hhc_filename = ret.hhk_filename = NULL;
+    }
     ret.ntfragments = 1;
     ret.template_fragments = snewn(ret.ntfragments, char *);
     ret.template_fragments[0] = dupstr("%b");
+    ret.chm_extrafiles = ret.chm_extranames = NULL;
+    ret.nchmextrafiles = ret.chmextrafilesize = 0;
     ret.head_end = ret.body_tag = ret.body_start = ret.body_end =
 	ret.addr_start = ret.addr_end = ret.nav_attr = NULL;
     ret.author = ret.description = NULL;
@@ -368,11 +427,20 @@ static htmlconfig html_configure(paragraph *source) {
     for (p = source; p; p = p->next) {
 	if (p->type == para_Config) {
 	    wchar_t *k = p->keyword;
+            int generic = FALSE;
 
-            if (!ustrnicmp(k, L"html-", 5)) {
+            if (!chm_mode && !ustrnicmp(k, L"html-", 5)) {
                 k += 5;
-            } else if (!ustrnicmp(k, L"xhtml-", 6)) {
+            } else if (!chm_mode && !ustrnicmp(k, L"xhtml-", 6)) {
                 k += 6;
+            } else if (chm_mode && !ustrnicmp(k, L"chm-", 4)) {
+                k += 4;
+            } else if (!ustrnicmp(k, L"htmlall-", 8)) {
+                k += 8;
+                /* In this mode, only accept directives that don't
+                 * vary completely between the HTML and CHM output
+                 * types. */
+                generic = TRUE;
             } else {
                 continue;
             }
@@ -578,39 +646,78 @@ static htmlconfig html_configure(paragraph *source) {
 		ret.pre_versionid = uadv(k);
 	    } else if (!ustricmp(k, L"post-versionid")) {
 		ret.post_versionid = uadv(k);
-	    } else if (!ustricmp(k, L"mshtmlhelp-chm")) {
+	    } else if (!generic && !ustricmp(
+                           k, chm_mode ? L"filename" : L"mshtmlhelp-chm")) {
 		sfree(ret.chm_filename);
 		ret.chm_filename = dupstr(adv(p->origkeyword));
-	    } else if (!ustricmp(k, L"mshtmlhelp-project")) {
-		sfree(ret.hhp_filename);
-		ret.hhp_filename = dupstr(adv(p->origkeyword));
-	    } else if (!ustricmp(k, L"mshtmlhelp-contents")) {
+	    } else if (!generic && !ustricmp(
+                           k, chm_mode ? L"contents-name" :
+                           L"mshtmlhelp-contents")) {
 		sfree(ret.hhc_filename);
 		ret.hhc_filename = dupstr(adv(p->origkeyword));
-	    } else if (!ustricmp(k, L"mshtmlhelp-index")) {
+	    } else if (!generic && !ustricmp(
+                           k, chm_mode ? L"index-name" :
+                           L"mshtmlhelp-index")) {
 		sfree(ret.hhk_filename);
 		ret.hhk_filename = dupstr(adv(p->origkeyword));
+	    } else if (!generic && !chm_mode &&
+                       !ustricmp(k, L"mshtmlhelp-project")) {
+		sfree(ret.hhp_filename);
+		ret.hhp_filename = dupstr(adv(p->origkeyword));
+	    } else if (!generic && chm_mode &&
+                       !ustricmp(k, L"extra-file")) {
+                char *diskname, *chmname;
+
+                diskname = adv(p->origkeyword);
+                if (*diskname) {
+                    chmname = adv(diskname);
+                    if (!*chmname)
+                        chmname = diskname;
+
+                    if (chmname[0] == '#' || chmname[0] == '$')
+                        err_chm_badname(&p->fpos, chmname);
+
+                    if (ret.nchmextrafiles >= ret.chmextrafilesize) {
+                        ret.chmextrafilesize = ret.nchmextrafiles * 5 / 4 + 32;
+                        ret.chm_extrafiles = sresize(
+                            ret.chm_extrafiles, ret.chmextrafilesize, char *);
+                        ret.chm_extranames = sresize(
+                            ret.chm_extranames, ret.chmextrafilesize, char *);
+                    }
+                    ret.chm_extrafiles[ret.nchmextrafiles] = dupstr(diskname);
+                    ret.chm_extranames[ret.nchmextrafiles] =
+                        dupstr(chmname);
+                    ret.nchmextrafiles++;
+                }
 	    }
 	}
     }
 
-    /*
-     * Enforce that the CHM and HHP filenames must either be both
-     * present or both absent. If one is present but not the other,
-     * turn both off.
-     */
-    if (!ret.chm_filename ^ !ret.hhp_filename) {
-	err_chmnames();
-	sfree(ret.chm_filename); ret.chm_filename = NULL;
-	sfree(ret.hhp_filename); ret.hhp_filename = NULL;
-    }
-    /*
-     * And if we're not generating an HHP, there's no need for HHC
-     * or HHK.
-     */
-    if (!ret.hhp_filename) {
-	sfree(ret.hhc_filename); ret.hhc_filename = NULL;
-	sfree(ret.hhk_filename); ret.hhk_filename = NULL;
+    if (!chm_mode) {
+        /*
+         * If we're in HTML mode but using the old-style options to
+         * output HTML Help Workshop auxiliary files, do some
+         * consistency checking.
+         */
+
+        /*
+         * Enforce that the CHM and HHP filenames must either be both
+         * present or both absent. If one is present but not the other,
+         * turn both off.
+         */
+        if (!ret.chm_filename ^ !ret.hhp_filename) {
+            err_chmnames();
+            sfree(ret.chm_filename); ret.chm_filename = NULL;
+            sfree(ret.hhp_filename); ret.hhp_filename = NULL;
+        }
+        /*
+         * And if we're not generating an HHP, there's no need for HHC
+         * or HHK.
+         */
+        if (!ret.hhp_filename) {
+            sfree(ret.hhc_filename); ret.hhc_filename = NULL;
+            sfree(ret.hhk_filename); ret.hhk_filename = NULL;
+        }
     }
 
     /*
@@ -644,20 +751,23 @@ paragraph *html_config_filename(char *filename)
     return p;
 }
 
-void html_backend(paragraph *sourceform, keywordlist *keywords,
-		  indexdata *idx, void *unused)
+paragraph *chm_config_filename(char *filename)
+{
+    return cmdline_cfg_simple("chm-filename", filename, NULL);
+}
+
+static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
+                                indexdata *idx, int chm_mode)
 {
     paragraph *p;
     htmlsect *topsect;
     htmlconfig conf;
     htmlfilelist files = { NULL, NULL, NULL, NULL, NULL, NULL };
     htmlsectlist sects = { NULL, NULL }, nonsects = { NULL, NULL };
-    char *hhk_filename;
-    int has_index;
+    struct chm *chm = NULL;
+    int has_index, hhk_needed = FALSE;
 
-    IGNORE(unused);
-
-    conf = html_configure(sourceform);
+    conf = html_configure(sourceform, chm_mode);
 
     /*
      * We're going to make heavy use of paragraphs' private data
@@ -732,10 +842,10 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 	/*
 	 * And the index, if we have one. Note that we don't output
 	 * an index as an HTML file if we're outputting one as a
-	 * .HHK.
+	 * .HHK (in either of the HTML or CHM output modes).
 	 */
 	has_index = (count234(idx->entries) > 0);
-	if (has_index && !conf.hhk_filename) {
+	if (has_index && !chm_mode && !conf.hhk_filename) {
 	    sect = html_new_sect(&sects, NULL, &conf);
 	    sect->text = NULL;
 	    sect->type = INDEX;
@@ -901,6 +1011,9 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 	}
     }
 
+    if (chm_mode)
+        chm = chm_new();
+
     /*
      * Now we're ready to write out the actual HTML files.
      * 
@@ -936,7 +1049,9 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 #define listname(lt) ( (lt)==UL ? "ul" : (lt)==OL ? "ol" : "dl" )
 #define itemname(lt) ( (lt)==LI ? "li" : (lt)==DT ? "dt" : "dd" )
 
-	    if (!strcmp(f->filename, "-"))
+            if (chm)
+                ho_setup_chm(&ho, chm, f->filename);
+	    else if (!strcmp(f->filename, "-"))
                 ho_setup_stdio(&ho, stdout);
             else
                 ho_setup_file(&ho, f->filename);
@@ -1728,8 +1843,7 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
      * whether there's even going to _be_ an index file: we omit it
      * if the index contains nothing.
      */
-    hhk_filename = conf.hhk_filename;
-    if (hhk_filename) {
+    if (chm_mode || conf.hhk_filename) {
 	int ok = FALSE;
 	int i;
 	indexentry *entry;
@@ -1743,8 +1857,138 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 	    }
 	}
 
-	if (!ok)
-	    hhk_filename = NULL;
+	if (ok)
+	    hhk_needed = TRUE;
+    }
+
+    /*
+     * If we're doing direct CHM output, tell winchm.c all the things
+     * it will need to know aside from the various HTML files'
+     * contents.
+     */
+    if (chm) {
+        chm_contents_filename(chm, conf.hhc_filename);
+        if (has_index)
+            chm_index_filename(chm, conf.hhk_filename);
+        chm_default_window(chm, "main");
+
+        {
+            htmloutput ho;
+            rdstringc rs = {0, 0, NULL};
+
+            ho.charset = CS_CP1252; /* as far as I know, CHM is */
+            ho.restrict_charset = CS_CP1252; /* hardwired to this charset */
+            ho.cstate = charset_init_state;
+            ho.ver = HTML_4;	       /* *shrug* */
+            ho.state = HO_NEUTRAL;
+            ho.contents_level = 0;
+            ho.hackflags = HO_HACK_QUOTENOTHING;
+
+            ho_setup_rdstringc(&ho, &rs);
+
+            ho.hacklimit = 255;
+            html_words(&ho, topsect->title->words, NOTHING,
+                       NULL, keywords, &conf);
+
+            rdaddc(&rs, '\0');
+            chm_title(chm, rs.text);
+
+            chm_default_topic(chm, files.head->filename);
+
+            chm_add_window(chm, "main", rs.text,
+                           conf.hhc_filename, conf.hhk_filename,
+                           files.head->filename,
+                           /* This first magic number is
+                            * fsWinProperties, controlling Navigation
+                            * Pane options and the like. Constants
+                            * HHWIN_PROP_* in htmlhelp.h. */
+                           0x62520,
+                           /* This second number is fsToolBarFlags,
+                            * mainly controlling toolbar buttons.
+                            * Constants HHWIN_BUTTON_*. NOTE: there
+                            * are two pairs of bits for Next/Previous
+                            * buttons: 7/8 (which do nothing useful),
+                            * and 21/22 (which work). (Neither of
+                            * these are exposed in the HHW UI, but
+                            * they work fine in HH.) We use the
+                            * latter. */
+                           0x70304e);
+
+            sfree(rs.text);
+        }
+
+        {
+            htmlfile *f;
+
+            for (f = files.head; f; f = f->next)
+                f->chmsect = NULL;
+            for (f = files.head; f; f = f->next) {
+                htmlsect *s = f->first;
+                htmloutput ho;
+                rdstringc rs = {0, 0, NULL};
+
+                ho.charset = CS_CP1252;
+                ho.restrict_charset = CS_CP1252;
+                ho.cstate = charset_init_state;
+                ho.ver = HTML_4;	       /* *shrug* */
+                ho.state = HO_NEUTRAL;
+                ho.contents_level = 0;
+                ho.hackflags = HO_HACK_QUOTENOTHING;
+
+                ho_setup_rdstringc(&ho, &rs);
+                ho.hacklimit = 255;
+
+                if (f->first->title)
+                    html_words(&ho, f->first->title->words, NOTHING,
+                               NULL, keywords, &conf);
+                else if (f->first->type == INDEX)
+                    html_text(&ho, conf.index_text);
+                rdaddc(&rs, '\0');
+                
+                while (s && s->file == f)
+                    s = s->parent;
+
+                /*
+                 * Special case, as below: the TOP file is not
+                 * considered to be the parent of everything else.
+                 */
+                if (s && s->type == TOP)
+                    s = NULL;
+
+                f->chmsect = chm_add_section(chm, s ? s->file->chmsect : NULL,
+                                             rs.text, f->filename);
+
+                sfree(rs.text);
+            }
+        }
+
+        {
+            int i;
+
+            for (i = 0; i < conf.nchmextrafiles; i++) {
+                const char *fname = conf.chm_extrafiles[i];
+                FILE *fp;
+                long size;
+                char *data;
+
+                fp = fopen(fname, "rb");
+                if (!fp) {
+                    err_cantopen(fname);
+                    continue;
+                }
+
+                fseek(fp, 0, SEEK_END);
+                size = ftell(fp);
+                rewind(fp);
+
+                data = snewn(size, char);
+                size = fread(data, 1, size, fp);
+                fclose(fp);
+
+                chm_add_file(chm, conf.chm_extranames[i], data, size);
+                sfree(data);
+            }
+        }
     }
 
     /*
@@ -1800,7 +2044,7 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
             ho_string(&ho, conf.hhc_filename);
             ho_string(&ho, "\n");
         }
-	if (hhk_filename) {
+	if (hhk_needed) {
             ho_string(&ho, "Index file=");
             ho_string(&ho, conf.hhk_filename);
             ho_string(&ho, "\n");
@@ -1817,8 +2061,8 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
         if (conf.hhc_filename)
             ho_string(&ho, conf.hhc_filename);
         ho_string(&ho, "\",\"");
-        if (hhk_filename)
-            ho_string(&ho, hhk_filename);
+        if (hhk_needed)
+            ho_string(&ho, conf.hhk_filename);
         ho_string(&ho, "\",\"");
         ho_string(&ho, files.head->filename);
         ho_string(&ho, "\",,,,,,"
@@ -1848,7 +2092,7 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 
         ho_finish(&ho);
     }
-    if (conf.hhc_filename) {
+    if (chm || conf.hhc_filename) {
 	htmlfile *f;
 	htmlsect *s, *a;
 	htmloutput ho;
@@ -1862,7 +2106,10 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 	ho.contents_level = 0;
 	ho.hackflags = HO_HACK_QUOTEQUOTES;
 
-	ho_setup_file(&ho, conf.hhc_filename);
+        if (chm)
+            ho_setup_chm(&ho, chm, conf.hhc_filename);
+        else
+            ho_setup_file(&ho, conf.hhc_filename);
 
 	/*
 	 * Magic DOCTYPE which seems to work for .HHC files. I'm
@@ -1955,7 +2202,7 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 
 	cleanup(&ho);
     }
-    if (hhk_filename) {
+    if (hhk_needed) {
 	htmlfile *f;
 	htmloutput ho;
 	indexentry *entry;
@@ -1976,7 +2223,10 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 	ho.contents_level = 0;
 	ho.hackflags = HO_HACK_QUOTEQUOTES;
 
-	ho_setup_file(&ho, hhk_filename);
+        if (chm)
+            ho_setup_chm(&ho, chm, conf.hhk_filename);
+        else
+            ho_setup_file(&ho, conf.hhk_filename);
 
 	/*
 	 * Magic DOCTYPE which seems to work for .HHK files. I'm
@@ -2039,6 +2289,26 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
 
 	ho_string(&ho, "</UL></BODY></HTML>\n");
 	cleanup(&ho);
+    }
+
+    if (chm) {
+        /*
+         * Finalise and write out the CHM file.
+         */
+        const char *data;
+        int len;
+        FILE *fp;
+
+        fp = fopen(conf.chm_filename, "wb");
+        if (!fp) {
+            err_cantopenw(conf.chm_filename);
+        } else {
+            data = chm_build(chm, &len);
+            fwrite(data, 1, len, fp);
+            fclose(fp);
+        }
+
+        chm_free(chm);
     }
 
     /*
@@ -2139,6 +2409,25 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
     while (conf.ntfragments--)
 	sfree(conf.template_fragments[conf.ntfragments]);
     sfree(conf.template_fragments);
+    while (conf.nchmextrafiles--) {
+	sfree(conf.chm_extrafiles[conf.nchmextrafiles]);
+	sfree(conf.chm_extranames[conf.nchmextrafiles]);
+    }
+    sfree(conf.chm_extrafiles);
+}
+
+void html_backend(paragraph *sourceform, keywordlist *keywords,
+                  indexdata *idx, void *unused)
+{
+    IGNORE(unused);
+    html_backend_common(sourceform, keywords, idx, FALSE);
+}
+
+void chm_backend(paragraph *sourceform, keywordlist *keywords,
+                 indexdata *idx, void *unused)
+{
+    IGNORE(unused);
+    html_backend_common(sourceform, keywords, idx, TRUE);
 }
 
 static void html_file_section(htmlconfig *cfg, htmlfilelist *files,

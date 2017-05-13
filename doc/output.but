@@ -858,13 +858,202 @@ name="description">} tag in the output HTML files, so that browsers
 which support this can easily pick out a brief \I{description, of
 document}description of the document.
 
-\S{output-html-mshtmlhelp} Generating MS Windows \i{HTML Help}
+\S{output-html-defaults} Default settings
 
-The HTML files output from Halibut's HTML back end can be used as
-input to the MS Windows HTML Help compiler. In order to do this, you
-also need some auxiliary files: a project file, and (probably) a
-contents file and an index file. Halibut can optionally generate
-those as well.
+The \i{default settings} for Halibut's HTML output format are:
+
+\c \cfg{html-contents-filename}{Contents.html}
+\c \cfg{html-index-filename}{IndexPage.html}
+\c \cfg{html-template-filename}{%n.html}
+\c \cfg{html-single-filename}{Manual.html}
+\c
+\c \cfg{html-leaf-level}{2}
+\c \cfg{html-leaf-contains-contents}{false}
+\c \cfg{html-leaf-smallest-contents}{4}
+\c \cfg{html-contents-depth}{0}{2}
+\c \cfg{html-contents-depth}{1}{3}
+\c ... and so on for all section levels below this ...
+\e iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+\c
+\c \cfg{html-head-end}{}
+\c \cfg{html-body-tag}{<body>}
+\c \cfg{html-body-start}{}
+\c \cfg{html-body-end}{}
+\c \cfg{html-address-start}{}
+\c \cfg{html-address-end}{}
+\c \cfg{html-navigation-attributes}{}
+\c
+\c \cfg{html-chapter-numeric}{false}
+\c \cfg{html-chapter-shownumber}{true}
+\c \cfg{html-chapter-suffix}{: }
+\c
+\c \cfg{html-section-numeric}{0}{true}
+\c \cfg{html-section-shownumber}{0}{true}
+\c \cfg{html-section-suffix}{0}{ }
+\c
+\c \cfg{html-section-numeric}{1}{true}
+\c \cfg{html-section-shownumber}{1}{true}
+\c \cfg{html-section-suffix}{1}{ }
+\c
+\c ... and so on for all section levels below this ...
+\e iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+\c
+\c \cfg{html-preamble-text}{Preamble}
+\c \cfg{html-contents-text}{Contents}
+\c \cfg{html-index-text}{Index}
+\c \cfg{html-title-separator}{ - }
+\c \cfg{html-index-main-separator}{: }
+\c \cfg{html-index-multiple-separator}{, }
+\c \cfg{html-pre-versionid}{[}
+\c \cfg{html-post-versionid}{]}
+\c \cfg{html-nav-prev-text}{Previous}
+\c \cfg{html-nav-next-text}{Next}
+\c \cfg{html-nav-up-text}{Up}
+\c \cfg{html-nav-separator}{ | }
+\c
+\c \cfg{html-output-charset}{ASCII}
+\c \cfg{html-restrict-charset}{UTF-8}
+\c \cfg{html-quotes}{\u2018}{\u2019}{"}{"}
+\c
+\c \cfg{html-version}{html4}
+\c \cfg{html-template-fragment}{%b}
+\c \cfg{html-versionid}{true}
+\c \cfg{html-rellinks}{true}
+\c \cfg{html-suppress-navlinks{false}
+\c \cfg{html-suppress-address}{false}
+\c \cfg{html-author}{}
+\c \cfg{html-description}{}
+
+\H{output-chm} Windows \i{HTML Help}
+
+This output format generates a \c{.chm} file suitable for use with the
+Windows HTML Help system.
+
+Older versions of Halibut could only generate HTML Help by writing out
+a set of source files acceptable to the MS help compiler. Nowadays
+Halibut can generate CHM directly, so that's no longer necessary.
+However, the legacy method is still available if you need it; see
+\k{output-html-mshtmlhelp} for details.
+
+\S{output-chm-file} Output file name
+
+\dt \I{\cw{\\cfg\{chm-filename\}}}\cw{\\cfg\{chm-filename\}\{}\e{filename}\cw{\}}
+
+\dd Sets the \i{output file name} in which to store the HTML Help
+file. This directive is implicitly generated if you provide a file
+name parameter after the command-line option \i\c{--chm} (see
+\k{running-options}).
+
+\S{output-chm-mostconfig} Configuration shared with the HTML back end
+
+As the name suggests, an HTML Help file is mostly a compressed
+container for HTML files. So the CHM back end shares a great deal of
+its code with the HTML back end, and as a result, it supports the same
+range of format configuration options.
+
+(One exception to this general rule is that the configuration options
+relating to generating \e{HTML Help compiler input} are not supported
+in CHM mode, because they wouldn't make any sense! The
+\cw{html-mshtmlhelp-*} options described in \k{output-html-mshtmlhelp}
+have no analogue starting \cw{chm-}.)
+
+However, because HTML and CHM are used in different ways, you may need
+to configure the two back ends differently. So in CHM mode, Halibut
+supports all the same configuration directives described in
+\k{output-html}, but with their names changed so that they begin with
+\cq{chm-} in place of \cq{html-}. This lets you maintain two sets of
+configuration independently; for example, you could specify
+\c{\\cfg\{html-chapter-numeric\}\{true\}} and
+\c{\\cfg\{chm-chapter-numeric\}\{false\}} in the same source file, and
+then when you ran Halibut with both the \c{--html} and \c{--chm}
+options, it would produce purely numeric chapter titles in the HTML
+output but not in the CHM file.
+
+If you do decide to apply a piece of configuration across both these
+back ends, you can prefix it with \cq{htmlall-} instead of \cq{html-}
+or \cq{chm-}. For example,
+\c{\\cfg\{htmlall-chapter-numeric\}\{true\}} will enable purely
+numeric chapter titles in \e{both} the HTML and CHM output.
+
+\S{output-chm-extra} Including extra files in the CHM
+
+CHM files are mostly a container for HTML, and the HTML files inside
+them are allowed to cross-refer to all the usual other kinds of file
+that HTML might refer to, such as images, stylesheets and even
+Javascript. If you want to make use of this capability, you need to
+tell Halibut what extra files it needs to incorporate into the CHM
+container.
+
+\dt \I{\cw{\\cfg\{chm-extra-file\}}}\cw{\\cfg\{chm-extra-file\}\{}\e{filename}\cw{\}}
+
+\dt \I{\cw{\\cfg\{chm-extra-file\}}}\cw{\\cfg\{chm-extra-file\}\{}\e{filename}\cw{\}\{}\e{name inside CHM}\cw{\}}
+
+\dd Tells Halibut to read an additional input file from \e{filename}
+and incorporate it into the CHM.
+
+\lcont{
+
+In the first form of the directive, the file will be given the same
+name within the CHM's internal namespace (i.e. for the purposes of
+linking to it from HTML files) as Halibut used to load it from disk.
+If you need to include the file with a different internal name, you
+can use the second form of the directive, which separately specifies
+the name under which Halibut should look for the input file and the
+name it should give it inside the CHM.
+
+You can specify this directive multiple times, to include more than
+one file.
+
+}
+
+\S{output-chm-internalnames} Renaming the CHM internal support files
+
+As well as ordinary HTML, there are also two special files inside a
+CHM, containing the table of contents and the index. Halibut generates
+these automatically, and you normally don't have to worry about them.
+However, it is \e{just} possible (though very unlikely!) that you
+might find they conflict with the name of some file you wanted to
+include in the CHM yourself, and hence, Halibut provides configuration
+options to change them if you need to.
+
+\dt \I{\cw{\\cfg\{chm-contents-name\}}}\cw{\\cfg\{chm-contents-name\}\{}\e{filename}\cw{\}}
+
+\dd Controls the name of the internal contents file in the CHM.
+
+\dt \I{\cw{\\cfg\{chm-index-name\}}}\cw{\\cfg\{chm-index-name\}\{}\e{filename}\cw{\}}
+
+\dd Controls the name of the internal index file in the CHM.
+
+\S{output-chm-defaults} Default settings
+
+The \i{default settings} for Halibut's CHM output format are mostly
+the same as for the standard HTML output. However, a few defaults are
+changed to be more in line with the way CHM wants to do things.
+
+\c \cfg{chm-filename}{output.chm}
+\c \cfg{chm-contents-name}{contents.hhc}
+\c \cfg{chm-index-name}{index.hhk}
+\c \cfg{chm-leaf-level}{infinite}
+\c \cfg{chm-suppress-navlinks{true}
+\c \cfg{chm-suppress-address}{true}
+
+\S{output-html-mshtmlhelp} Generating input to the MS Windows \i{HTML
+Help compiler}
+
+Before Halibut gained the ability to write out CHM files directly, it
+used a more cumbersome system in which you could run it in HTML mode
+and enable some extra options that would write out supporting files
+needed by the official Windows HTML Help compiler, so that you could
+still generate a CHM file from your Halibut source in multiple build
+steps.
+
+This legacy system for HTML Help generation is still supported, partly
+to avoid backwards-compatibility breakage for anyone already using it,
+and also because it permits more flexibility in the resulting CHM
+files: Halibut's own CHM file generation makes some fixed decisions
+about window layout and styling, whereas if you use the official help
+compiler you can start from Halibut's default project file and make
+whatever manual changes you like to that sort of thing.
 
 To enable the generation of MS HTML Help auxiliary files, use the
 following configuration directives:
@@ -940,17 +1129,15 @@ MS HTML Help compiler (\cw{HHC.EXE}), or load into the MS HTML Help
 Workshop (\cw{HHW.EXE}).
 
 You may also wish to alter other HTML configuration options to make
-the resulting help file look more like a help file and less like a
-web page. A suggested set of additional configuration options for
-HTML Help is as follows:
+the resulting help file look more like a help file and less like a web
+page. If you use Halibut's direct CHM output, this is done for you
+automatically (see \k{output-chm-defaults}); but if you're using the
+HTML output mode then I recommend the following changes.
 
 \b \cw{\\cfg\{html-leaf-level\}\{infinite\}}, because HTML Help
 works best with lots of small files (\q{topics}) rather than a few
 large ones. In particular, the contents and index mechanisms can
 only reference files, not subsections within files.
-
-\b \cw{\\cfg\{html-leaf-contains-contents\}\{false\}}, to suppress
-the contents list above the main text of each bottom-level file.
 
 \b \cw{\\cfg\{html-suppress-navlinks\}\{true\}}, because HTML Help
 has its own navigation facilities and it looks a bit strange to
@@ -960,83 +1147,15 @@ duplicate them.
 \cw{<ADDRESS>} section makes less sense in a help file than it does
 on a web page.
 
-\S{output-html-defaults} Default settings
+\H{output-whlp} Legacy Windows Help
 
-The \i{default settings} for Halibut's HTML output format are:
-
-\c \cfg{html-contents-filename}{Contents.html}
-\c \cfg{html-index-filename}{IndexPage.html}
-\c \cfg{html-template-filename}{%n.html}
-\c \cfg{html-single-filename}{Manual.html}
-\c
-\c \cfg{html-leaf-level}{2}
-\c \cfg{html-leaf-contains-contents}{false}
-\c \cfg{html-leaf-smallest-contents}{4}
-\c \cfg{html-contents-depth}{0}{2}
-\c \cfg{html-contents-depth}{1}{3}
-\c ... and so on for all section levels below this ...
-\e iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
-\c
-\c \cfg{html-head-end}{}
-\c \cfg{html-body-tag}{<body>}
-\c \cfg{html-body-start}{}
-\c \cfg{html-body-end}{}
-\c \cfg{html-address-start}{}
-\c \cfg{html-address-end}{}
-\c \cfg{html-navigation-attributes}{}
-\c
-\c \cfg{html-chapter-numeric}{false}
-\c \cfg{html-chapter-shownumber}{true}
-\c \cfg{html-chapter-suffix}{: }
-\c
-\c \cfg{html-section-numeric}{0}{true}
-\c \cfg{html-section-shownumber}{0}{true}
-\c \cfg{html-section-suffix}{0}{ }
-\c
-\c \cfg{html-section-numeric}{1}{true}
-\c \cfg{html-section-shownumber}{1}{true}
-\c \cfg{html-section-suffix}{1}{ }
-\c
-\c ... and so on for all section levels below this ...
-\e iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
-\c
-\c \cfg{html-preamble-text}{Preamble}
-\c \cfg{html-contents-text}{Contents}
-\c \cfg{html-index-text}{Index}
-\c \cfg{html-title-separator}{ - }
-\c \cfg{html-index-main-separator}{: }
-\c \cfg{html-index-multiple-separator}{, }
-\c \cfg{html-pre-versionid}{[}
-\c \cfg{html-post-versionid}{]}
-\c \cfg{html-nav-prev-text}{Previous}
-\c \cfg{html-nav-next-text}{Next}
-\c \cfg{html-nav-up-text}{Up}
-\c \cfg{html-nav-separator}{ | }
-\c
-\c \cfg{html-output-charset}{ASCII}
-\c \cfg{html-restrict-charset}{UTF-8}
-\c \cfg{html-quotes}{\u2018}{\u2019}{"}{"}
-\c
-\c \cfg{html-version}{html4}
-\c \cfg{html-template-fragment}{%b}
-\c \cfg{html-versionid}{true}
-\c \cfg{html-rellinks}{true}
-\c \cfg{html-suppress-navlinks{false}
-\c \cfg{html-suppress-address}{false}
-\c \cfg{html-author}{}
-\c \cfg{html-description}{}
-
-\H{output-whlp} Windows Help
-
-This output format generates data that can be used by the \i{Windows
-Help} program \cw{WINHLP32.EXE}. There are two actual files
+This output format generates data that can be used by the legacy
+\i{Windows Help} program \cw{WINHLP32.EXE}. There are two actual files
 generated, one ending in \c{.hlp} and the other ending in \c{.cnt}.
 
-Note that as of 2006, MS is discontinuing the Windows Help format in
-favour of the newer HTML Help format (\c{.chm} files). Halibut is
-not currently able to generate \c{.chm} files directly, but its HTML
-back end can write out project files suitable for use as input to
-the MS HTML Help compiler. See \k{output-html-mshtmlhelp} for more
+This legacy Windows Help format was discontinued in 2006 in favour of
+HTML Help, which Halibut can also generate. You probably want to use
+that instead for any new project. See \k{output-chm} for more
 information on this.
 
 Currently, the Windows Help output is hardcoded to be in the

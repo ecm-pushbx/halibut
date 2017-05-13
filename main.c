@@ -35,6 +35,7 @@ static const struct backend {
     {"info", info_backend, info_config_filename, 0x0010, 0},
     {"ps", ps_backend, ps_config_filename, 0x0020, 0x0001},
     {"pdf", pdf_backend, pdf_config_filename, 0x0040, 0x0001},
+    {"chm", chm_backend, chm_config_filename, 0x0080, 0},
 };
 
 int main(int argc, char **argv) {
