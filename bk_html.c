@@ -369,14 +369,19 @@ static htmlconfig html_configure(paragraph *source) {
 	if (p->type == para_Config) {
 	    wchar_t *k = p->keyword;
 
-	    if (!ustrnicmp(k, L"xhtml-", 6))
-		k++;		    /* treat `xhtml-' and `html-' the same */
+            if (!ustrnicmp(k, L"html-", 5)) {
+                k += 5;
+            } else if (!ustrnicmp(k, L"xhtml-", 6)) {
+                k += 6;
+            } else {
+                continue;
+            }
 
-	    if (!ustricmp(k, L"html-restrict-charset")) {
+	    if (!ustricmp(k, L"restrict-charset")) {
 		ret.restrict_charset = charset_from_ustr(&p->fpos, uadv(k));
-	    } else if (!ustricmp(k, L"html-output-charset")) {
+	    } else if (!ustricmp(k, L"output-charset")) {
 		ret.output_charset = charset_from_ustr(&p->fpos, uadv(k));
-	    } else if (!ustricmp(k, L"html-version")) {
+	    } else if (!ustricmp(k, L"version")) {
 		wchar_t *vername = uadv(k);
 		static const struct {
 		    const wchar_t *name;
@@ -398,19 +403,19 @@ static htmlconfig html_configure(paragraph *source) {
 		    err_htmlver(&p->fpos, vername);
 		else
 		    ret.htmlver = versions[i].ver;
-	    } else if (!ustricmp(k, L"html-single-filename")) {
+	    } else if (!ustricmp(k, L"single-filename")) {
 		sfree(ret.single_filename);
 		ret.single_filename = dupstr(adv(p->origkeyword));
-	    } else if (!ustricmp(k, L"html-contents-filename")) {
+	    } else if (!ustricmp(k, L"contents-filename")) {
 		sfree(ret.contents_filename);
 		ret.contents_filename = dupstr(adv(p->origkeyword));
-	    } else if (!ustricmp(k, L"html-index-filename")) {
+	    } else if (!ustricmp(k, L"index-filename")) {
 		sfree(ret.index_filename);
 		ret.index_filename = dupstr(adv(p->origkeyword));
-	    } else if (!ustricmp(k, L"html-template-filename")) {
+	    } else if (!ustricmp(k, L"template-filename")) {
 		sfree(ret.template_filename);
 		ret.template_filename = dupstr(adv(p->origkeyword));
-	    } else if (!ustricmp(k, L"html-template-fragment")) {
+	    } else if (!ustricmp(k, L"template-fragment")) {
 		char *frag = adv(p->origkeyword);
 		if (*frag) {
 		    while (ret.ntfragments--)
@@ -429,17 +434,17 @@ static htmlconfig html_configure(paragraph *source) {
 		    }
 		} else
 		    err_cfginsufarg(&p->fpos, p->origkeyword, 1);
-	    } else if (!ustricmp(k, L"html-chapter-numeric")) {
+	    } else if (!ustricmp(k, L"chapter-numeric")) {
 		ret.achapter.just_numbers = utob(uadv(k));
-	    } else if (!ustricmp(k, L"html-chapter-shownumber")) {
+	    } else if (!ustricmp(k, L"chapter-shownumber")) {
 		ret.achapter.number_at_all = utob(uadv(k));
-	    } else if (!ustricmp(k, L"html-suppress-navlinks")) {
+	    } else if (!ustricmp(k, L"suppress-navlinks")) {
 		ret.navlinks = !utob(uadv(k));
-	    } else if (!ustricmp(k, L"html-rellinks")) {
+	    } else if (!ustricmp(k, L"rellinks")) {
 		ret.rellinks = utob(uadv(k));
-	    } else if (!ustricmp(k, L"html-chapter-suffix")) {
+	    } else if (!ustricmp(k, L"chapter-suffix")) {
 		ret.achapter.number_suffix = uadv(k);
-	    } else if (!ustricmp(k, L"html-leaf-level")) {
+	    } else if (!ustricmp(k, L"leaf-level")) {
 		wchar_t *u = uadv(k);
 		if (!ustricmp(u, L"infinite") ||
 		    !ustricmp(u, L"infinity") ||
@@ -447,7 +452,7 @@ static htmlconfig html_configure(paragraph *source) {
 		    ret.leaf_level = -1;   /* represents infinity */
 		else
 		    ret.leaf_level = utoi(u);
-	    } else if (!ustricmp(k, L"html-section-numeric")) {
+	    } else if (!ustricmp(k, L"section-numeric")) {
 		wchar_t *q = uadv(k);
 		int n = 0;
 		if (uisdigit(*q)) {
@@ -462,7 +467,7 @@ static htmlconfig html_configure(paragraph *source) {
 		    ret.nasect = n+1;
 		}
 		ret.asect[n].just_numbers = utob(q);
-	    } else if (!ustricmp(k, L"html-section-shownumber")) {
+	    } else if (!ustricmp(k, L"section-shownumber")) {
 		wchar_t *q = uadv(k);
 		int n = 0;
 		if (uisdigit(*q)) {
@@ -477,7 +482,7 @@ static htmlconfig html_configure(paragraph *source) {
 		    ret.nasect = n+1;
 		}
 		ret.asect[n].number_at_all = utob(q);
-	    } else if (!ustricmp(k, L"html-section-suffix")) {
+	    } else if (!ustricmp(k, L"section-suffix")) {
 		wchar_t *q = uadv(k);
 		int n = 0;
 		if (uisdigit(*q)) {
@@ -493,8 +498,8 @@ static htmlconfig html_configure(paragraph *source) {
 		    ret.nasect = n+1;
 		}
 		ret.asect[n].number_suffix = q;
-	    } else if (!ustricmp(k, L"html-contents-depth") ||
-		       !ustrnicmp(k, L"html-contents-depth-", 20)) {
+	    } else if (!ustricmp(k, L"contents-depth") ||
+		       !ustrnicmp(k, L"contents-depth-", 15)) {
 		/*
 		 * Relic of old implementation: this directive used
 		 * to be written as \cfg{html-contents-depth-3}{2}
@@ -502,7 +507,7 @@ static htmlconfig html_configure(paragraph *source) {
 		 * \cfg{html-contents-depth}{3}{2}. We therefore
 		 * support both.
 		 */
-		wchar_t *q = k[19] ? k+20 : uadv(k);
+		wchar_t *q = k[14] ? k+15 : uadv(k);
 		int n = 0;
 		if (uisdigit(*q)) {
 		    n = utoi(q);
@@ -518,71 +523,71 @@ static htmlconfig html_configure(paragraph *source) {
 		    ret.ncdepths = n+1;
 		}
 		ret.contents_depths[n] = utoi(q);
-	    } else if (!ustricmp(k, L"html-head-end")) {
+	    } else if (!ustricmp(k, L"head-end")) {
 		ret.head_end = adv(p->origkeyword);
-	    } else if (!ustricmp(k, L"html-body-tag")) {
+	    } else if (!ustricmp(k, L"body-tag")) {
 		ret.body_tag = adv(p->origkeyword);
-	    } else if (!ustricmp(k, L"html-body-start")) {
+	    } else if (!ustricmp(k, L"body-start")) {
 		ret.body_start = adv(p->origkeyword);
-	    } else if (!ustricmp(k, L"html-body-end")) {
+	    } else if (!ustricmp(k, L"body-end")) {
 		ret.body_end = adv(p->origkeyword);
-	    } else if (!ustricmp(k, L"html-address-start")) {
+	    } else if (!ustricmp(k, L"address-start")) {
 		ret.addr_start = adv(p->origkeyword);
-	    } else if (!ustricmp(k, L"html-address-end")) {
+	    } else if (!ustricmp(k, L"address-end")) {
 		ret.addr_end = adv(p->origkeyword);
-	    } else if (!ustricmp(k, L"html-navigation-attributes")) {
+	    } else if (!ustricmp(k, L"navigation-attributes")) {
 		ret.nav_attr = adv(p->origkeyword);
-	    } else if (!ustricmp(k, L"html-author")) {
+	    } else if (!ustricmp(k, L"author")) {
 		ret.author = uadv(k);
-	    } else if (!ustricmp(k, L"html-description")) {
+	    } else if (!ustricmp(k, L"description")) {
 		ret.description = uadv(k);
-	    } else if (!ustricmp(k, L"html-suppress-address")) {
+	    } else if (!ustricmp(k, L"suppress-address")) {
 		ret.address_section = !utob(uadv(k));
-	    } else if (!ustricmp(k, L"html-versionid")) {
+	    } else if (!ustricmp(k, L"versionid")) {
 		ret.visible_version_id = utob(uadv(k));
-	    } else if (!ustricmp(k, L"html-quotes")) {
+	    } else if (!ustricmp(k, L"quotes")) {
 		if (*uadv(k) && *uadv(uadv(k))) {
 		    ret.lquote = uadv(k);
 		    ret.rquote = uadv(ret.lquote);
 		}
-	    } else if (!ustricmp(k, L"html-leaf-contains-contents")) {
+	    } else if (!ustricmp(k, L"leaf-contains-contents")) {
 		ret.leaf_contains_contents = utob(uadv(k));
-	    } else if (!ustricmp(k, L"html-leaf-smallest-contents")) {
+	    } else if (!ustricmp(k, L"leaf-smallest-contents")) {
 		ret.leaf_smallest_contents = utoi(uadv(k));
-	    } else if (!ustricmp(k, L"html-index-text")) {
+	    } else if (!ustricmp(k, L"index-text")) {
 		ret.index_text = uadv(k);
-	    } else if (!ustricmp(k, L"html-contents-text")) {
+	    } else if (!ustricmp(k, L"contents-text")) {
 		ret.contents_text = uadv(k);
-	    } else if (!ustricmp(k, L"html-preamble-text")) {
+	    } else if (!ustricmp(k, L"preamble-text")) {
 		ret.preamble_text = uadv(k);
-	    } else if (!ustricmp(k, L"html-title-separator")) {
+	    } else if (!ustricmp(k, L"title-separator")) {
 		ret.title_separator = uadv(k);
-	    } else if (!ustricmp(k, L"html-nav-prev-text")) {
+	    } else if (!ustricmp(k, L"nav-prev-text")) {
 		ret.nav_prev_text = uadv(k);
-	    } else if (!ustricmp(k, L"html-nav-next-text")) {
+	    } else if (!ustricmp(k, L"nav-next-text")) {
 		ret.nav_next_text = uadv(k);
-	    } else if (!ustricmp(k, L"html-nav-up-text")) {
+	    } else if (!ustricmp(k, L"nav-up-text")) {
 		ret.nav_up_text = uadv(k);
-	    } else if (!ustricmp(k, L"html-nav-separator")) {
+	    } else if (!ustricmp(k, L"nav-separator")) {
 		ret.nav_separator = uadv(k);
-	    } else if (!ustricmp(k, L"html-index-main-separator")) {
+	    } else if (!ustricmp(k, L"index-main-separator")) {
 		ret.index_main_sep = uadv(k);
-	    } else if (!ustricmp(k, L"html-index-multiple-separator")) {
+	    } else if (!ustricmp(k, L"index-multiple-separator")) {
 		ret.index_multi_sep = uadv(k);
-	    } else if (!ustricmp(k, L"html-pre-versionid")) {
+	    } else if (!ustricmp(k, L"pre-versionid")) {
 		ret.pre_versionid = uadv(k);
-	    } else if (!ustricmp(k, L"html-post-versionid")) {
+	    } else if (!ustricmp(k, L"post-versionid")) {
 		ret.post_versionid = uadv(k);
-	    } else if (!ustricmp(k, L"html-mshtmlhelp-chm")) {
+	    } else if (!ustricmp(k, L"mshtmlhelp-chm")) {
 		sfree(ret.chm_filename);
 		ret.chm_filename = dupstr(adv(p->origkeyword));
-	    } else if (!ustricmp(k, L"html-mshtmlhelp-project")) {
+	    } else if (!ustricmp(k, L"mshtmlhelp-project")) {
 		sfree(ret.hhp_filename);
 		ret.hhp_filename = dupstr(adv(p->origkeyword));
-	    } else if (!ustricmp(k, L"html-mshtmlhelp-contents")) {
+	    } else if (!ustricmp(k, L"mshtmlhelp-contents")) {
 		sfree(ret.hhc_filename);
 		ret.hhc_filename = dupstr(adv(p->origkeyword));
-	    } else if (!ustricmp(k, L"html-mshtmlhelp-index")) {
+	    } else if (!ustricmp(k, L"mshtmlhelp-index")) {
 		sfree(ret.hhk_filename);
 		ret.hhk_filename = dupstr(adv(p->origkeyword));
 	    }
