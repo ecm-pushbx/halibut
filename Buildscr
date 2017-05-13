@@ -23,6 +23,19 @@ set Basename halibut-$(Version)
 # Make the source archive.
 in halibut do ./release.sh $(Basename) $(Version)
 
+# Build a Windows binary of Halibut using clang-cl.
+in halibut with clangcl64 do make CC='clang --target=x86_64-pc-windows-msvc18.0.0 -D_CRT_SECURE_NO_WARNINGS' CC_LINK='lld-link -defaultlib:libcmt -out:$$@' EXE=.exe
+in halibut do mv build/halibut.exe .
+in halibut do rm -rf build
+delegate windows
+    # Code-sign the Windows binary, if the local bob config provides
+    # a script to do so. We assume here that the script accepts an -i
+    # option to provide a 'more info' URL, and that it signs the file
+    # in place.
+    ifneq "$(winsigncode)" "" in halibut do $(winsigncode) -i http://www.chiark.greenend.org.uk/~sgtatham/halibut/ halibut.exe
+    return halibut/halibut.exe
+enddelegate
+
 # Build a local binary of Halibut in order to build the docs. Make
 # sure to tag it with the supplied version number, so that the
 # release docs announce themselves as having been built with the
@@ -33,11 +46,8 @@ in halibut do make $(Rel)
 in halibut/doc do make
 
 deliver halibut/*.tar.gz $@
+deliver halibut/halibut.exe $@
 deliver halibut/doc/halibut.pdf $@
 deliver halibut/doc/halibut.txt $@
 deliver halibut/doc/halibut.chm $@
 deliver halibut/doc/*.html $@
-
-# FIXME: it'd be nice to add a Windows delegation here so we can
-# ship a prebuilt Halibut executable. However, that requires a
-# Windows makefile.

@@ -76,7 +76,9 @@ CFLAGS += -DLOGALLOC
 LIBS += -lefence
 endif
 
-all: halibut
+EXE =#
+
+all: halibut$(EXE)
 
 SRC := ../
 
@@ -91,6 +93,7 @@ LIBCHARSET_GENPFX = charset-#
 MD = -MD
 CFLAGS += -I$(LIBCHARSET_SRCDIR) -I$(LIBCHARSET_OBJDIR)
 include $(LIBCHARSET_SRCDIR)Makefile
+CC_LINK = $(CC) -o $@
 
 MODULES := main malloc ustring error help licence version misc tree234
 MODULES += input in_afm in_pf in_sfnt keywords contents index biblio
@@ -100,8 +103,8 @@ MODULES += winhelp winchm deflate lzx lz77 huffman psdata wcwidth
 OBJECTS := $(addsuffix .o,$(MODULES)) $(LIBCHARSET_OBJS)
 DEPS := $(addsuffix .d,$(MODULES))
 
-halibut: $(OBJECTS)
-	$(CC) $(LFLAGS) -o halibut $(OBJECTS) $(LIBS)
+halibut$(EXE): $(OBJECTS)
+	$(CC_LINK) $(LFLAGS) $(OBJECTS) $(LIBS)
 
 %.o: $(SRC)%.c
 	$(CC) $(CFLAGS) -MD -c $<
