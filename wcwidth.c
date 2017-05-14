@@ -124,7 +124,7 @@ int mk_wcswidth(const wchar_t *pwcs, size_t n)
 {
   int w, width = 0;
 
-  for (;*pwcs && n-- > 0; pwcs++)
+  for (; n-- > 0 && *pwcs; pwcs++)
     if ((w = mk_wcwidth(*pwcs)) < 0)
       return -1;
     else

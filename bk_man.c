@@ -629,7 +629,7 @@ static int man_rdaddwc(rdstringc *rs, word *text, word *end,
 	    charset_state s2 = *state;
 	    int len = ustrlen(text->text), hyphen = FALSE;
 
-	    if (text->breaks && text->text[len - 1] == '-') {
+	    if (text->breaks && len > 0 && text->text[len - 1] == '-') {
 		len--;
 		hyphen = TRUE;
 	    }
