@@ -2633,8 +2633,8 @@ static para_data *rule_paragraph(int indent, paper_conf *conf)
     /*
      * Better to break after a rule than before it
      */
-    ldata->penalty_after += 100000;
-    ldata->penalty_before += -100000;
+    ldata->penalty_after = 100000;
+    ldata->penalty_before = -100000;
 
     pdata->first = pdata->last = ldata;
     pdata->outline_level = -1;
