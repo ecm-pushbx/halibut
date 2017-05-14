@@ -2562,6 +2562,7 @@ static para_data *code_paragraph(int indent, word *words, paper_conf *conf)
 	    memcpy(w->text, start, (t-start) * sizeof(wchar_t));
 	    w->text[t-start] = '\0';
 	    w->breaks = FALSE;
+	    w->aux = 0;
 
 	    if (ltail)
 		ltail->next = w;
