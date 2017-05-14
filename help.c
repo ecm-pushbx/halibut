@@ -8,8 +8,9 @@
 static const char *const helptext[] = {
     "usage:   halibut [options] files",
     "options: --text[=filename]     generate plain text output",
-    "         --html[=filename]     generate XHTML output",
-    "         --winhelp[=filename]  generate Windows Help output",
+    "         --html[=filename]     generate HTML or XHTML output",
+    "         --chm[=filename]      generate Windows HTML Help output",
+    "         --winhelp[=filename]  generate legacy Windows Help output",
     "         --man[=filename]      generate man page output",
     "         --info[=filename]     generate GNU info output",
     "         --ps[=filename]       generate PostScript output",
