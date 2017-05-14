@@ -4553,6 +4553,7 @@ void init_std_fonts(void) {
 	font_info *fi = snew(font_info);
 	fi->fontfile = NULL;
 	fi->name = ps_std_fonts[i].name;
+        fi->filetype = TYPE1;   /* for purposes of making subset fonts */
 	fi->widths = newtree234(width_cmp);
 	for (j = 0; j < (int)lenof(fi->bmp); j++)
 	    fi->bmp[j] = NOGLYPH;
