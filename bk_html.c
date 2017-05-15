@@ -1887,8 +1887,9 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
             ho_setup_rdstringc(&ho, &rs);
 
             ho.hacklimit = 255;
-            html_words(&ho, topsect->title->words, NOTHING,
-                       NULL, keywords, &conf);
+            if (topsect->title)
+                html_words(&ho, topsect->title->words, NOTHING,
+                           NULL, keywords, &conf);
 
             rdaddc(&rs, '\0');
             chm_title(chm, rs.text);
@@ -2027,8 +2028,9 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
                   "Title=");
 
 	ho.hacklimit = 255;
-	html_words(&ho, topsect->title->words, NOTHING,
-		   NULL, keywords, &conf);
+        if (topsect->title)
+            html_words(&ho, topsect->title->words, NOTHING,
+                       NULL, keywords, &conf);
 
 	ho_string(&ho, "\n");
 
