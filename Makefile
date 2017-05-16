@@ -110,7 +110,7 @@ halibut$(EXE): $(OBJECTS)
 	$(CC) $(CFLAGS) -MD -c $<
 
 version.o: FORCE
-	$(CC) $(VDEF) -MD -c $(SRC)version.c
+	$(CC) $(CFLAGS) $(VDEF) -MD -c $(SRC)version.c
 
 spotless:: clean
 	rm -f *.d
