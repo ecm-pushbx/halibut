@@ -1,6 +1,5 @@
 /build.log
 /build.out
-/build
 /halibut
 /doc/*.html
 /doc/halibut.1
@@ -9,3 +8,15 @@
 /doc/halibut.ps
 /doc/halibut.txt
 /doc/halibut.chm
+*.o
+.deps
+/Makefile
+/Makefile.in
+/aclocal.m4
+/autom4te.cache/
+/compile
+/configure
+/depcomp
+/install-sh
+/missing
+/stamp-h1
