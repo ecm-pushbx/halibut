@@ -20,3 +20,12 @@
 /install-sh
 /missing
 /stamp-h1
+/config.log
+/config.status
+/halibut.1
+/halibut.chm
+/halibut.info*
+/halibut.pdf
+/halibut.ps
+/halibut.txt
+/*.html
