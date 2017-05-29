@@ -327,8 +327,7 @@ static void directory(rdstringc *rs, tree234 *files)
         PUT_32BIT_LSB_FIRST(chunk.text + chunk_endlen_field,
                             chunksize - chunk.pos);
         PUT_16BIT_LSB_FIRST(reversed_quickref.text, n_entries);
-        while (chunk.pos + reversed_quickref.pos < chunksize)
-            rdaddc(&chunk, 0);         /* zero-pad */
+        rdaddc_rep(&chunk, 0, chunksize - chunk.pos - reversed_quickref.pos);
         for (i = reversed_quickref.pos - 2; i >= 0; i -= 2)
             rdaddsn(&chunk, reversed_quickref.text+i, 2);
 
@@ -417,8 +416,8 @@ static void directory(rdstringc *rs, tree234 *files)
             PUT_32BIT_LSB_FIRST(chunk.text + chunk_endlen_field,
                                 chunksize - chunk.pos);
             PUT_16BIT_LSB_FIRST(reversed_quickref.text, n_entries);
-            while (chunk.pos + reversed_quickref.pos < chunksize)
-                rdaddc(&chunk, 0);         /* zero-pad */
+            rdaddc_rep(&chunk, 0,
+                       chunksize - chunk.pos - reversed_quickref.pos);
             for (i = reversed_quickref.pos - 2; i >= 0; i -= 2)
                 rdaddsn(&chunk, reversed_quickref.text+i, 2);
 
@@ -543,8 +542,8 @@ int chm_intern_string(struct chm *chm, const char *string)
         /* Pad to ensure the string doesn't cross a page boundary. */
         size = strlen(string) + 1;  /* include the NUL terminator */
         assert(size < 0x1000);  /* avoid really serious trouble */
-        while ((chm->stringsfile.pos ^ (chm->stringsfile.pos + size-1)) >> 12)
-            rdaddc(&chm->stringsfile, 0);
+        if ((chm->stringsfile.pos ^ (chm->stringsfile.pos + size-1)) >> 12)
+            rdaddc_rep(&chm->stringsfile, 0, 0xFFF & -chm->stringsfile.pos);
 
         ent->strtab_offset = chm->stringsfile.pos;
         rdaddsc(&chm->stringsfile, string);
@@ -950,8 +949,7 @@ const char *chm_build(struct chm *chm, int *outlen)
             RDADD_32BIT_LSB_FIRST(&winfile, 0); /* default nav pane = TOC */
             RDADD_32BIT_LSB_FIRST(&winfile, 0); /* nav pane tabs at top */
             RDADD_32BIT_LSB_FIRST(&winfile, 0); /* WM_NOTIFY id */
-            for (j = 0; j < 20; j++)
-                rdaddc(&winfile, 0);            /* tab order block */
+            rdaddc_rep(&winfile, 0, 20);        /* tab order block */
             RDADD_32BIT_LSB_FIRST(&winfile, 0); /* history to keep */
             RDADD_32BIT_LSB_FIRST(&winfile, 0); /* no Jump 1 button target */
             RDADD_32BIT_LSB_FIRST(&winfile, 0); /* no Jump 2 button target */
@@ -983,8 +981,7 @@ const char *chm_build(struct chm *chm, int *outlen)
 
         urltbl_pre = newtree234(chm_urltbl_entry_cmp);
 
-        for (i = 0; i < 0x1000; i++)
-            rdaddc(&tocidx, 0);
+        rdaddc_rep(&tocidx, 0, 0x1000);
 
         /* Write a header of one zero byte at the start of #URLSTR.
          * chmspec says this doesn't always appear, and is unclear on
@@ -1079,8 +1076,8 @@ const char *chm_build(struct chm *chm, int *outlen)
              * plus a NUL-terminated copy of the target file name / URL. */
             urlstr_size = 8 + strlen(sect->url) + 1;
             assert(urlstr_size < 0x1000); /* must _fit_ in a page! */
-            while ((urlstr.pos ^ (urlstr.pos + urlstr_size - 1)) >> 12)
-                rdaddc(&urlstr, 0);
+            if ((urlstr.pos ^ (urlstr.pos + urlstr_size - 1)) >> 12)
+                rdaddc_rep(&urlstr, 0, 0xFFF & -urlstr_size);
 
             /*
              * Save everything we know so far about the #URLTBL record
@@ -1229,8 +1226,7 @@ const char *chm_build(struct chm *chm, int *outlen)
         }
 
         /* Align the current #TOCIDX offset to 16 bytes */
-        while (tocidx.pos & 0xF)
-            rdaddc(&tocidx, 0);
+        rdaddc_rep(&tocidx, 0, 0xF & -tocidx.pos);
 
         /* #TOCIDX header field pointing at start of type-3 records */
         PUT_32BIT_LSB_FIRST(tocidx.text + 0x4, tocidx.pos);
@@ -1295,8 +1291,7 @@ const char *chm_build(struct chm *chm, int *outlen)
             RDADD_32BIT_LSB_FIRST(&sysfile, 1); /* unknown */
             RDADD_32BIT_LSB_FIRST(&sysfile, 0); /* no merge files */
             RDADD_32BIT_LSB_FIRST(&sysfile, 0); /* unknown */
-            while (sysfile.pos - idxhdr_start < 4096)
-                rdaddc(&sysfile, 0);
+            rdaddc_rep(&sysfile, 0, 4096 - (sysfile.pos - idxhdr_start));
 
             chm_add_file_internal(chm, "/#IDXHDR", sysfile.text + idxhdr_start,
                                   sysfile.pos - idxhdr_start,
@@ -1367,8 +1362,9 @@ const char *chm_build(struct chm *chm, int *outlen)
         int orig_decomp_size = chm->content1.pos;
         size_t i;
 
-        while (chm->content1.pos & 0x7FFF)
-            rdaddc(&chm->content1, 0); /* pad to a realign-interval boundary */
+        /* Pad to a realign-interval boundary */
+        rdaddc_rep(&chm->content1, 0, 0x7FFF & -chm->content1.pos);
+
         ef = lzx(chm->content1.text, chm->content1.pos, 0x8000, 0x10000);
         chm_add_file_internal(
             chm, "::DataSpace/Storage/MSCompressed/Content",

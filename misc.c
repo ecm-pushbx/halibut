@@ -2,6 +2,7 @@
  * misc.c: miscellaneous useful items
  */
 
+#include <assert.h>
 #include <stdarg.h>
 #include "halibut.h"
 
@@ -98,6 +99,19 @@ void rdaddsn(rdstringc *rs, char const *p, int len) {
 	rs->text = sresize(rs->text, rs->size, char);
     }
     memcpy(rs->text + rs->pos, p, len);
+    rs->pos += len;
+    rs->text[rs->pos] = 0;
+}
+void rdaddc_rep(rdstringc *rs, char c, int len) {
+    if (len <= 0) {
+        assert(len == 0);
+        return;
+    }
+    if (rs->pos >= rs->size - len) {
+	rs->size = rs->pos + len + 128;
+	rs->text = sresize(rs->text, rs->size, char);
+    }
+    memset(rs->text + rs->pos, c, len);
     rs->pos += len;
     rs->text[rs->pos] = 0;
 }
