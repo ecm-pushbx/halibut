@@ -274,11 +274,22 @@ void build_huffman_tree(int *freqs, unsigned char *lengths,
      *   ----------------------------------
      *          maxprob - nactivesyms
      *
-     * rounded up, of course. And we'll only even be trying
-     * this if
+     * rounded up, of course. And we'll only even be trying this if
+     * smallestfreq <= totalfreq / maxprob, which is precisely the
+     * condition under which the numerator of this fraction is
+     * positive.
+     *
+     * (As for the denominator, that could only be negative if there
+     * were more than F_{n+2} symbols overall, in which case it
+     * _wouldn't_ be possible to avoid having a symbol with
+     * probability at most 1/F_{n+2}. So that is a constraint on the
+     * input parameters to this function, which we enforce by
+     * assertion.)
      */
     num = totalfreq - smallestfreq * maxprob;
     denom = maxprob - nactivesyms;
+    assert(num > 0);   /* this just restates the assert above */
+    assert(denom > 0); /* this is a constraint on the function parameters */
     adjust = (num + denom - 1) / denom;
 
     /*
