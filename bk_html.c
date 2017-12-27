@@ -2946,11 +2946,20 @@ static void html_href(htmloutput *ho, htmlfile *thisfile,
 	rdaddc(&rs, '#');
 	rdaddsc(&rs, targetfrag);
     }
+
+    /* If _neither_ of those conditions were true, we don't have a URL
+     * at all and will segfault when we pass url==NULL to element_attr.
+     *
+     * I think this can only occur as a knock-on effect from an input
+     * file error, but we still shouldn't crash, of course. */
+
     url = rs.text;
 
     element_open(ho, "a");
-    element_attr(ho, "href", url);
-    sfree(url);
+    if (url) {
+        element_attr(ho, "href", url);
+        sfree(url);
+    }
 }
 
 static void html_fragment(htmloutput *ho, char const *fragment)
