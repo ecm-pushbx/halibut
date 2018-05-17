@@ -633,9 +633,25 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
     const rdstring nullrs = { 0, 0, NULL };
     wchar_t uchr;
 
-    t.text = NULL;
-    t.origtext = NULL;
-    already = FALSE;
+    t = get_token(in);
+    already = TRUE;
+
+    /*
+     * Ignore tok_white if it appears at the very start of the file.
+     *
+     * At the start of most paragraphs, tok_white is guaranteed not to
+     * appear, because get_token will have folded it into the
+     * preceding tok_eop (since a tok_eop is simply a sequence of
+     * whitespace containing at least two newlines).
+     *
+     * The one exception is if there isn't a preceding tok_eop, i.e.
+     * if the very first paragraph begins with something that lexes as
+     * a tok_white. Easiest way to get round that is to ignore it
+     * here, by unsetting the 'already' flag which will force a new
+     * token to be fetched below.
+     */
+    if (t.type == tok_white)
+        already = FALSE;
 
     crossparastk = stk_new();
 
