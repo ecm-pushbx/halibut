@@ -207,9 +207,9 @@ void whlp_backend(paragraph *sourceform, keywordlist *keywords,
     {
 	int len = strlen(conf.filename);
 	if (len < 4 || conf.filename[len-4] != '.' ||
-	    tolower(conf.filename[len-3] != 'h') ||
-	    tolower(conf.filename[len-2] != 'l') ||
-	    tolower(conf.filename[len-1] != 'p')) {
+	    tolower(conf.filename[len-3]) != 'h' ||
+	    tolower(conf.filename[len-2]) != 'l' ||
+	    tolower(conf.filename[len-1]) != 'p') {
 	    char *newf;
 	    newf = snewn(len + 5, char);
 	    sprintf(newf, "%s.hlp", conf.filename);
