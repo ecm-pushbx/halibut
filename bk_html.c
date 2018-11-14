@@ -344,22 +344,22 @@ static htmlconfig html_configure(paragraph *source, int chm_mode)
      * Defaults.
      */
     ret.leaf_level = chm_mode ? -1 /* infinite */ : 2;
-    ret.achapter.just_numbers = FALSE;
-    ret.achapter.number_at_all = TRUE;
+    ret.achapter.just_numbers = false;
+    ret.achapter.number_at_all = true;
     ret.achapter.number_suffix = L": ";
     ret.nasect = 1;
     ret.asect = snewn(ret.nasect, sectlevel);
-    ret.asect[0].just_numbers = TRUE;
-    ret.asect[0].number_at_all = TRUE;
+    ret.asect[0].just_numbers = true;
+    ret.asect[0].number_at_all = true;
     ret.asect[0].number_suffix = L" ";
     ret.ncdepths = 0;
     ret.contents_depths = 0;
-    ret.visible_version_id = TRUE;
-    ret.address_section = chm_mode ? FALSE : TRUE;
-    ret.leaf_contains_contents = FALSE;
+    ret.visible_version_id = true;
+    ret.address_section = chm_mode ? false : true;
+    ret.leaf_contains_contents = false;
     ret.leaf_smallest_contents = 4;
-    ret.navlinks = chm_mode ? FALSE : TRUE;
-    ret.rellinks = TRUE;
+    ret.navlinks = chm_mode ? false : true;
+    ret.rellinks = true;
     ret.single_filename = dupstr("Manual.html");
     ret.contents_filename = dupstr("Contents.html");
     ret.index_filename = dupstr("IndexPage.html");
@@ -427,7 +427,7 @@ static htmlconfig html_configure(paragraph *source, int chm_mode)
     for (p = source; p; p = p->next) {
 	if (p->type == para_Config) {
 	    wchar_t *k = p->keyword;
-            int generic = FALSE;
+            int generic = false;
 
             if (!chm_mode && !ustrnicmp(k, L"html-", 5)) {
                 k += 5;
@@ -440,7 +440,7 @@ static htmlconfig html_configure(paragraph *source, int chm_mode)
                 /* In this mode, only accept directives that don't
                  * vary completely between the HTML and CHM output
                  * types. */
-                generic = TRUE;
+                generic = true;
             } else {
                 continue;
             }
@@ -765,7 +765,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
     htmlfilelist files = { NULL, NULL, NULL, NULL, NULL, NULL };
     htmlsectlist sects = { NULL, NULL }, nonsects = { NULL, NULL };
     struct chm *chm = NULL;
-    int has_index, hhk_needed = FALSE;
+    int has_index, hhk_needed = false;
 
     conf = html_configure(sourceform, chm_mode);
 
@@ -979,7 +979,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 		    indextag *tag;
 		    int i;
 
-		    hr->referenced = hr->generated = FALSE;
+		    hr->referenced = hr->generated = false;
 		    hr->section = lastsect;
 		    {
 			char buf[40];
@@ -1310,7 +1310,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 			    html_fragment(&ho, sects.head->fragments[i]);
 		}
 
-		html_section_title(&ho, sects.head, f, keywords, &conf, TRUE);
+		html_section_title(&ho, sects.head, f, keywords, &conf, true);
 
 		element_close(&ho, "h1");
 	    }
@@ -1329,7 +1329,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 	    {
 		int ntoc = 0, tocsize = 0, tocstartidx = 0;
 		htmlsect **toc = NULL;
-		int leaf = TRUE;
+		int leaf = true;
 
 		for (s = sects.head; s; s = s->next) {
 		    htmlsect *a, *ac;
@@ -1351,7 +1351,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 		    }
 
 		    if (s->file != f && a != NULL)
-			leaf = FALSE;
+			leaf = false;
 
 		    if (a) {
 			if (adepth <= a->contents_depth) {
@@ -1399,14 +1399,14 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 	     * Now go through the document and output some real
 	     * text.
 	     */
-	    displaying = FALSE;
+	    displaying = false;
 	    for (s = sects.head; s; s = s->next) {
 		if (s->file == f) {
 		    /*
 		     * This section belongs in this file.
 		     * Display it.
 		     */
-		    displaying = TRUE;
+		    displaying = true;
 		} else {
 		    /*
 		     * Doesn't belong in this file, but it may be
@@ -1417,7 +1417,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 		    htmlsect *a, *ac;
 		    int depth, adepth;
 
-		    displaying = FALSE;
+		    displaying = false;
 
 		    /*
 		     * Search up from this section until we find
@@ -1490,7 +1490,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 				    html_fragment(&ho, s->fragments[i]);
 			}
 
-			html_section_title(&ho, s, f, keywords, &conf, TRUE);
+			html_section_title(&ho, s, f, keywords, &conf, true);
 
 			element_close(&ho, htag);
 		    }
@@ -1722,7 +1722,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 
 				html_href(&ho, f, hr->section->file,
 					  hr->fragment);
-				hr->referenced = TRUE;
+				hr->referenced = true;
 				if (p && p->kwtext)
 				    html_words(&ho, p->kwtext, MARKUP|LINKS,
 					       f, keywords, &conf);
@@ -1755,7 +1755,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 		/*
 		 * Footer.
 		 */
-		int done_version_ids = FALSE;
+		int done_version_ids = false;
 
 		if (conf.address_section)
 		    element_empty(&ho, "hr");
@@ -1764,7 +1764,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 		    html_raw(&ho, conf.body_end);
 
 		if (conf.address_section) {
-		    int started = FALSE;
+		    int started = false;
 		    if (conf.htmlver == ISO_HTML) {
 			/*
 			 * The ISO-HTML validator complains if
@@ -1782,7 +1782,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 		    if (conf.addr_start) {
 			html_raw(&ho, conf.addr_start);
 			html_nl(&ho);
-			started = TRUE;
+			started = true;
 		    }
 		    if (conf.visible_version_id) {
 			for (p = sourceform; p; p = p->next)
@@ -1794,9 +1794,9 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 				html_words(&ho, p->words, NOTHING,
 					   f, keywords, &conf);
 				html_text(&ho, conf.post_versionid);
-				started = TRUE;
+				started = true;
 			    }
-			done_version_ids = TRUE;
+			done_version_ids = true;
 		    }
 		    if (conf.addr_end) {
 			if (started)
@@ -1814,12 +1814,12 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 		     * visible, I think we still have a duty to put
 		     * them in an HTML comment.
 		     */
-		    int started = FALSE;
+		    int started = false;
 		    for (p = sourceform; p; p = p->next)
 			if (p->type == para_VersionID) {
 			    if (!started) {
 				html_raw(&ho, "<!-- version IDs:\n");
-				started = TRUE;
+				started = true;
 			    }
 			    html_words(&ho, p->words, NOTHING,
 				       f, keywords, &conf);
@@ -1844,7 +1844,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
      * if the index contains nothing.
      */
     if (chm_mode || conf.hhk_filename) {
-	int ok = FALSE;
+	int ok = false;
 	int i;
 	indexentry *entry;
 
@@ -1852,13 +1852,13 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 	    htmlindex *hi = (htmlindex *)entry->backend_data;
 
 	    if (hi->nrefs > 0) {
-		ok = TRUE;	       /* found an index entry */
+		ok = true;	       /* found an index entry */
 		break;
 	    }
 	}
 
 	if (ok)
-	    hhk_needed = TRUE;
+	    hhk_needed = true;
     }
 
     /*
@@ -2129,7 +2129,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 	    /*
 	     * For each HTML file, write out a contents entry.
 	     */
-	    int depth, leaf = TRUE;
+	    int depth, leaf = true;
 
 	    /*
 	     * Determine the depth of this file in the contents
@@ -2162,7 +2162,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 		    if (leaf && s->file != f) {
 			for (a = s; a; a = a->parent)
 			    if (a->file == f) {
-				leaf = FALSE;
+				leaf = false;
 				break;
 			    }
 		    }
@@ -2272,7 +2272,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 			hr->section->file->temp = 1;
 		    }
 
-		    hr->referenced = TRUE;
+		    hr->referenced = true;
 		}
 
 		ho_string(&ho, "</OBJECT>\n");
@@ -2422,14 +2422,14 @@ void html_backend(paragraph *sourceform, keywordlist *keywords,
                   indexdata *idx, void *unused)
 {
     IGNORE(unused);
-    html_backend_common(sourceform, keywords, idx, FALSE);
+    html_backend_common(sourceform, keywords, idx, false);
 }
 
 void chm_backend(paragraph *sourceform, keywordlist *keywords,
                  indexdata *idx, void *unused)
 {
     IGNORE(unused);
-    html_backend_common(sourceform, keywords, idx, TRUE);
+    html_backend_common(sourceform, keywords, idx, true);
 }
 
 static void html_file_section(htmlconfig *cfg, htmlfilelist *files,
@@ -2623,7 +2623,7 @@ static void html_words(htmloutput *ho, word *words, int flags,
 	if (flags & INDEXENTS) {
 	    htmlindexref *hr = (htmlindexref *)w->private_data;
 	    html_fragment(ho, hr->fragment);
-	    hr->generated = TRUE;
+	    hr->generated = true;
 	}
 	break;
       case word_Normal:
@@ -2830,7 +2830,7 @@ static void element_attr_w(htmloutput *ho, char const *name,
     ho_string(ho, " ");
     ho_string(ho, name);
     ho_string(ho, "=\"");
-    html_text_limit_internal(ho, value, 0, TRUE, FALSE);
+    html_text_limit_internal(ho, value, 0, true, false);
     html_charset_cleanup(ho);
     ho_string(ho, "\"");
 }
@@ -2838,19 +2838,19 @@ static void element_attr_w(htmloutput *ho, char const *name,
 static void html_text(htmloutput *ho, wchar_t const *text)
 {
     return_mostly_to_neutral(ho);
-    html_text_limit_internal(ho, text, 0, FALSE, FALSE);
+    html_text_limit_internal(ho, text, 0, false, false);
 }
 
 static void html_text_nbsp(htmloutput *ho, wchar_t const *text)
 {
     return_mostly_to_neutral(ho);
-    html_text_limit_internal(ho, text, 0, FALSE, TRUE);
+    html_text_limit_internal(ho, text, 0, false, true);
 }
 
 static void html_text_limit(htmloutput *ho, wchar_t const *text, int maxlen)
 {
     return_mostly_to_neutral(ho);
-    html_text_limit_internal(ho, text, maxlen, FALSE, FALSE);
+    html_text_limit_internal(ho, text, maxlen, false, false);
 }
 
 static void html_text_limit_internal(htmloutput *ho, wchar_t const *text,
@@ -2862,7 +2862,7 @@ static void html_text_limit_internal(htmloutput *ho, wchar_t const *text,
     bool err;
 
     if (ho->hackflags & (HO_HACK_QUOTEQUOTES | HO_HACK_OMITQUOTES))
-	quote_quotes = TRUE;	       /* override the input value */
+	quote_quotes = true;	       /* override the input value */
 
     if (maxlen > 0 && textlen > maxlen)
 	textlen = maxlen;
@@ -3195,7 +3195,7 @@ static void html_contents_entry(htmloutput *ho, int depth, htmlsect *s,
 
     element_open(ho, "li");
     html_href(ho, thisfile, s->file, s->fragments[0]);
-    html_section_title(ho, s, thisfile, keywords, cfg, FALSE);
+    html_section_title(ho, s, thisfile, keywords, cfg, false);
     element_close(ho, "a");
     /* <li> will be closed by a later invocation */
 }

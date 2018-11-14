@@ -5,6 +5,7 @@
 #include <wchar.h>
 #include <time.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "charset.h"
 
@@ -12,13 +13,6 @@
 #define NORETURN __attribute__((__noreturn__))
 #else
 #define NORETURN /* nothing */
-#endif
-
-#ifndef TRUE
-#define TRUE 1
-#endif
-#ifndef FALSE
-#define FALSE 0
 #endif
 
 /* For suppressing unused-parameter warnings */

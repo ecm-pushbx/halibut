@@ -67,9 +67,9 @@ static int macrolookup(tree234 *macros, input *in, wchar_t *name,
 	expansion->ptr = 0;
 	expansion->npushback = in->npushback;
 	in->stack = expansion;
-	return TRUE;
+	return true;
     } else
-	return FALSE;
+	return false;
 }
 static void macrocleanup(tree234 *macros) {
     int ti;
@@ -478,10 +478,10 @@ token get_token(input *in) {
 	 * things other than whitespace, backslash, braces and
 	 * hyphen. A hyphen terminates the word but is returned as
 	 * part of it; everything else is pushed back for the next
-	 * token. The `aux' field contains TRUE if the word ends in
+	 * token. The `aux' field contains true if the word ends in
 	 * a hyphen.
 	 */
-	ret.aux = FALSE;	       /* assumed for now */
+	ret.aux = false;	       /* assumed for now */
 	prevpos = 0;
 	while (1) {
 	    if (iswhite(c) || c=='{' || c=='}' || c=='\\' || c==EOF) {
@@ -492,7 +492,7 @@ token get_token(input *in) {
 		rdadd(&rs, c);
 		if (c == '-') {
 		    prevpos = rsc.pos;
-		    ret.aux = TRUE;
+		    ret.aux = true;
 		    break;	       /* hyphen terminates word */
 		}
 	    }
@@ -634,7 +634,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
     wchar_t uchr;
 
     t = get_token(in);
-    already = TRUE;
+    already = true;
 
     /*
      * Ignore tok_white if it appears at the very start of the file.
@@ -651,7 +651,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
      * token to be fetched below.
      */
     if (t.type == tok_white)
-        already = FALSE;
+        already = false;
 
     crossparastk = stk_new();
 
@@ -672,7 +672,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 	    if (!already) {
 		dtor(t), t = get_token(in);
 	    }
-	    already = FALSE;
+	    already = false;
 	} while (t.type == tok_eop);
 	if (t.type == tok_eof)
 	    break;
@@ -688,7 +688,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 	    while (1) {
 		dtor(t), t = get_codepar_token(in);
 		wd.type = wtype;
-		wd.breaks = FALSE;     /* shouldn't need this... */
+		wd.breaks = false;     /* shouldn't need this... */
 		wd.text = ustrdup(t.text);
 		wd.alt = NULL;
 		wd.fpos = t.pos;
@@ -703,7 +703,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 		if (t.type == tok_eop || t.type == tok_eof ||
 		    t.type == tok_rbrace) { /* might be } terminating \lcont */
 		    if (t.type == tok_rbrace)
-			already = TRUE;
+			already = true;
 		    break;
 		} else if (t.type == tok_cmd && t.cmd == c_c) {
 		    wtype = word_WeakCode;
@@ -755,7 +755,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 	    do {
 		dtor(t), t = get_token(in);
 	    } while (t.type == tok_white);
-	    already = TRUE;
+	    already = true;
 
 	    if (cmd == c_lcont) {
 		/*
@@ -845,7 +845,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 	par.type = para_Normal;
 	if (t.type == tok_cmd) {
 	    int needkw;
-	    int is_macro = FALSE;
+	    int is_macro = false;
 
 	    par.fpos = t.pos;
 	    switch (t.cmd) {
@@ -896,7 +896,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 	      case c_cfg: needkw = 8; par.type = para_Config;
 		start_cmd = c_cfg; break;
 	      case c_copyright: needkw = 32; par.type = para_Copyright; break;
-	      case c_define: is_macro = TRUE; needkw = 1; break;
+	      case c_define: is_macro = true; needkw = 1; break;
 		/* For \nocite the keyword is _everything_ */
 	      case c_nocite: needkw = 8; par.type = para_NoCite; break;
 	      case c_preamble: needkw = 32; par.type = para_Normal; break;
@@ -1024,7 +1024,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 			    dtor(t), t = get_token(in);
 		    }
 		    if (t.type == tok_cmd)
-			already = TRUE;/* inhibit get_token at top of loop */
+			already = true;/* inhibit get_token at top of loop */
 		    prev_para_type = par.type;
 		    addpara(par, ret);
 
@@ -1056,16 +1056,16 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 	parsestk = stk_new();
 	style = word_Normal;
 	spcstyle = word_WhiteSpace;
-	indexing = FALSE;
-	seenwhite = TRUE;
+	indexing = false;
+	seenwhite = true;
 	while (t.type != tok_eop && t.type != tok_eof) {
-	    iswhite = FALSE;
-	    already = FALSE;
+	    iswhite = false;
+	    already = false;
 
 	    /* Handle implicit paragraph breaks after \IM, \BR etc */
 	    if (start_cmd != c__invalid &&
 		t.type == tok_cmd && t.cmd == start_cmd) {
-		already = TRUE;	       /* inhibit get_token at top of loop */
+		already = true;	       /* inhibit get_token at top of loop */
 		break;
 	    }
 
@@ -1093,7 +1093,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 		wd.alt = NULL;
 		wd.aux = 0;
 		wd.fpos = t.pos;
-		wd.breaks = FALSE;
+		wd.breaks = false;
 
 		/*
 		 * Inhibit use of whitespace if it's (probably the
@@ -1102,7 +1102,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 		 */
 		if (start_cmd != c__invalid) {
 		    dtor(t), t = get_token(in);
-		    already = TRUE;
+		    already = true;
 		    if (t.type == tok_cmd && t.cmd == start_cmd)
 			break;
 		}
@@ -1113,7 +1113,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 		    addword(wd, &whptr);
 		if (indexing)
 		    addword(wd, &idximplicit);
-		iswhite = TRUE;
+		iswhite = true;
 		break;
 	      case tok_word:
 		if (indexing)
@@ -1149,7 +1149,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 		     * wants popping. Accordingly, we treat it here
 		     * as an indication that the paragraph is over.
 		     */
-		    already = TRUE;
+		    already = true;
 		    goto finished_para;
 		} else {
 		    if (sitem->type & stack_ualt) {
@@ -1172,9 +1172,9 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 				if (w->text)
 				    ustrlow(w->text);
 			}
-			indexing = FALSE;
+			indexing = false;
 			rdadd(&indexstr, L'\0');
-			index_merge(idx, FALSE, indexstr.text,
+			index_merge(idx, false, indexstr.text,
 				    idxwordlist, &sitem->fpos);
 			sfree(indexstr.text);
 		    }
@@ -1184,7 +1184,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 			wd.alt = NULL;
 			wd.aux = 0;
 			wd.fpos = t.pos;
-			wd.breaks = FALSE;
+			wd.breaks = false;
 			if (!indexing || index_visible)
 			    addword(wd, &whptr);
 			if (indexing)
@@ -1196,7 +1196,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 			wd.alt = NULL;
 			wd.aux = quote_Close;
 			wd.fpos = t.pos;
-			wd.breaks = FALSE;
+			wd.breaks = false;
 			if (!indexing || index_visible)
 			    addword(wd, &whptr);
 			if (indexing) {
@@ -1235,11 +1235,11 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 			}
 		    }
 		    if (seenwhite) {
-			already = TRUE;
+			already = true;
 			dtor(t), t = get_token(in);
 			if (t.type == tok_white) {
-			    iswhite = TRUE;
-			    already = FALSE;
+			    iswhite = true;
+			    already = false;
 			}
 		    }
 		    break;
@@ -1268,7 +1268,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 			    wd.alt = NULL;
 			    wd.aux = quote_Open;
 			    wd.fpos = t.pos;
-			    wd.breaks = FALSE;
+			    wd.breaks = false;
 			    if (!indexing || index_visible)
 				addword(wd, &whptr);
 			    if (indexing) {
@@ -1305,7 +1305,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 		     * brace. No nesting; no arguments.
 		     */
 		    wd.fpos = t.pos;
-		    wd.breaks = FALSE;
+		    wd.breaks = false;
 		    if (t.cmd == c_K)
 			wd.type = word_UpperXref;
 		    else if (t.cmd == c_k)
@@ -1319,7 +1319,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 			if (wd.type == word_Normal) {
 			    time_t thetime = time(NULL);
 			    struct tm *broken = localtime(&thetime);
-			    already = TRUE;
+			    already = true;
 			    wdtext = ustrftime(NULL, broken);
 			    wd.type = style;
 			} else {
@@ -1383,7 +1383,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 				wd.text = NULL;
 				wd.alt = NULL;
 				wd.aux = 0;
-				wd.breaks = FALSE;
+				wd.breaks = false;
 				indexword = addword(wd, &whptr);
 				/* Set up a rdstring to read the
 				 * index text */
@@ -1392,7 +1392,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 				 * Things with text */
 				index_visible = (type != c_I);
 				index_downcase = (type == c_ii);
-				indexing = TRUE;
+				indexing = true;
 				idxwordlist = NULL;
 				idximplicit = &idxwordlist;
 
@@ -1500,14 +1500,14 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 			wd.text = NULL;
 			wd.alt = NULL;
 			wd.aux = 0;
-			wd.breaks = FALSE;
+			wd.breaks = false;
 			indexword = addword(wd, &whptr);
 			/* Set up a rdstring to read the index text */
 			indexstr = nullrs;
 			/* Flags so that we do the Right Things with text */
 			index_visible = (type != c_I);
 			index_downcase = (type == c_ii);
-			indexing = TRUE;
+			indexing = true;
 			idxwordlist = NULL;
 			idximplicit = &idxwordlist;
 			/* Stack item to close the indexing on exit */
@@ -1518,7 +1518,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 		    uchr = t.aux;
 		    utext[0] = uchr; utext[1] = 0;
 		    wd.type = style;
-		    wd.breaks = FALSE;
+		    wd.breaks = false;
 		    wd.alt = NULL;
 		    wd.aux = 0;
 		    wd.fpos = t.pos;
@@ -1551,7 +1551,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 		    } else {
 			if (indexing)
 			    rdadd(&indexstr, uchr);
-			already = TRUE;
+			already = true;
 		    }
 		    break;
 		  default:
@@ -1585,7 +1585,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 	    addpara(par, ret);
 	}
 	if (t.type == tok_eof)
-	    already = TRUE;
+	    already = true;
     }
 
     if (stk_top(crossparastk)) {
@@ -1611,12 +1611,12 @@ struct {
     int binary;
     void (*reader)(input *);
 } magics[] = {
-    { "%!FontType1-",     12, FALSE, &read_pfa_file },
-    { "%!PS-AdobeFont-",  15, FALSE, &read_pfa_file },
-    { "\x80\x01",          2, TRUE,  &read_pfb_file },
-    { "StartFontMetrics", 16, FALSE, &read_afm_file },
-    { "\x00\x01\x00\x00",  4, TRUE,  &read_sfnt_file },
-    { "true",		   4, TRUE,  &read_sfnt_file },
+    { "%!FontType1-",     12, false, &read_pfa_file },
+    { "%!PS-AdobeFont-",  15, false, &read_pfa_file },
+    { "\x80\x01",          2, true,  &read_pfb_file },
+    { "StartFontMetrics", 16, false, &read_afm_file },
+    { "\x00\x01\x00\x00",  4, true,  &read_sfnt_file },
+    { "true",		   4, true,  &read_sfnt_file },
 };
 
 paragraph *read_input(input *in, indexdata *idx) {
@@ -1639,7 +1639,7 @@ paragraph *read_input(input *in, indexdata *idx) {
 
 	if (!in->filenames[in->currindex]) {
 	    in->currfp = stdin;
-	    in->wantclose = FALSE;     /* don't fclose stdin */
+	    in->wantclose = false;     /* don't fclose stdin */
 	    /*
 	     * When reading standard input, we always expect to see
 	     * an actual Halibut file and not any of the unusual
@@ -1653,9 +1653,9 @@ paragraph *read_input(input *in, indexdata *idx) {
 	     * looking at a text file type.
 	     */
 	    in->currfp = fopen(in->filenames[in->currindex], "rb");
-	    binary = FALSE; /* default to Halibut source, which is text */
+	    binary = false; /* default to Halibut source, which is text */
 	    if (in->currfp) {
-		in->wantclose = TRUE;
+		in->wantclose = true;
 		reader = NULL;
 		len = fread(mag, 1, sizeof(mag), in->currfp);
 		for (i = 0; i < lenof(magics); i++) {

@@ -32,7 +32,7 @@ keyword *kw_lookup(keywordlist *kl, wchar_t *str) {
  * finish).
  */
 keywordlist *get_keywords(paragraph *source) {
-    int errors = FALSE;
+    int errors = false;
     keywordlist *kl = snew(keywordlist);
     numberstate *n = number_init();
     int prevpara = para_NotParaType;
@@ -139,7 +139,7 @@ void subst_keywords(paragraph *source, keywordlist *kl) {
 		close->alt = NULL;
 		close->type = word_XrefEnd;
 		close->fpos = ptr->fpos;
-		close->breaks = FALSE;
+		close->breaks = false;
 		close->aux = 0;
 
 		close->next = ptr->next;

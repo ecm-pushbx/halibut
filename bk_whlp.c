@@ -159,7 +159,7 @@ void whlp_backend(paragraph *sourceform, keywordlist *keywords,
     int i;
     int nesting;
     indexentry *ie;
-    int done_contents_topic = FALSE;
+    int done_contents_topic = false;
     whlpconf conf;
 
     IGNORE(unused);
@@ -342,7 +342,7 @@ void whlp_backend(paragraph *sourceform, keywordlist *keywords,
 	    if (p->type == para_Title) {
 		whlp_begin_para(h, WHLP_PARA_NONSCROLL);
 		state.cstate = charset_init_state;
-		whlp_mkparagraph(&state, FONT_TITLE, p->words, FALSE, &conf);
+		whlp_mkparagraph(&state, FONT_TITLE, p->words, false, &conf);
 		whlp_wtext(&state, NULL);
 		whlp_end_para(h);
 		whlp_rdaddwc(&rs, p->words, &conf, NULL);
@@ -431,7 +431,7 @@ void whlp_backend(paragraph *sourceform, keywordlist *keywords,
 		    whlp_navmenu(&state, p, &conf);
 	    }
 
-	    done_contents_topic = TRUE;
+	    done_contents_topic = true;
 	}
 
 	if (lastsect && lastsect->child) {
@@ -513,11 +513,11 @@ void whlp_backend(paragraph *sourceform, keywordlist *keywords,
 	    whlp_begin_para(h, WHLP_PARA_NONSCROLL);
 	    state.cstate = charset_init_state;
 	    if (p->kwtext) {
-		whlp_mkparagraph(&state, FONT_TITLE, p->kwtext, FALSE, &conf);
+		whlp_mkparagraph(&state, FONT_TITLE, p->kwtext, false, &conf);
 		whlp_set_font(h, FONT_TITLE);
 		whlp_wtext(&state, conf.sectsuffix);
 	    }
-	    whlp_mkparagraph(&state, FONT_TITLE, p->words, FALSE, &conf);
+	    whlp_mkparagraph(&state, FONT_TITLE, p->words, false, &conf);
 	    whlp_wtext(&state, NULL);
 	    whlp_end_para(h);
 
@@ -563,7 +563,7 @@ void whlp_backend(paragraph *sourceform, keywordlist *keywords,
 	    if (p->type == para_Bullet) {
 		whlp_wtext(&state, conf.bullet);
 	    } else {
-		whlp_mkparagraph(&state, FONT_NORMAL, p->kwtext, FALSE, &conf);
+		whlp_mkparagraph(&state, FONT_NORMAL, p->kwtext, false, &conf);
 		whlp_wtext(&state, conf.listsuffix);
 	    }
 	    whlp_wtext(&state, NULL);
@@ -577,11 +577,11 @@ void whlp_backend(paragraph *sourceform, keywordlist *keywords,
 	state.cstate = charset_init_state;
 
 	if (p->type == para_BiblioCited) {
-	    whlp_mkparagraph(&state, FONT_NORMAL, p->kwtext, FALSE, &conf);
+	    whlp_mkparagraph(&state, FONT_NORMAL, p->kwtext, false, &conf);
 	    whlp_wtext(&state, L" ");
 	}
 
-	whlp_mkparagraph(&state, FONT_NORMAL, p->words, FALSE, &conf);
+	whlp_mkparagraph(&state, FONT_NORMAL, p->words, false, &conf);
 	whlp_wtext(&state, NULL);
 	whlp_end_para(h);
 	break;
@@ -687,11 +687,11 @@ static void whlp_navmenu(struct bk_whlp_state *state, paragraph *p,
     whlp_start_hyperlink(state->h, (WHLP_TOPIC)p->private_data);
     state->cstate = charset_init_state;
     if (p->kwtext) {
-	whlp_mkparagraph(state, FONT_NORMAL, p->kwtext, TRUE, conf);
+	whlp_mkparagraph(state, FONT_NORMAL, p->kwtext, true, conf);
 	whlp_set_font(state->h, FONT_NORMAL);
 	whlp_wtext(state, conf->sectsuffix);
     }
-    whlp_mkparagraph(state, FONT_NORMAL, p->words, TRUE, conf);
+    whlp_mkparagraph(state, FONT_NORMAL, p->words, true, conf);
     whlp_wtext(state, NULL);
     whlp_end_hyperlink(state->h);
     whlp_end_para(state->h);
@@ -789,7 +789,7 @@ static void whlp_mkparagraph(struct bk_whlp_state *state,
 	    if (cvt_ok(conf->charset, text->text) || !text->alt)
 		whlp_wtext(state, text->text);
 	    else
-		whlp_mkparagraph(state, deffont, text->alt, FALSE, conf);
+		whlp_mkparagraph(state, deffont, text->alt, false, conf);
 	} else if (removeattr(text->type) == word_WhiteSpace) {
 	    whlp_wtext(state, L" ");
 	} else if (removeattr(text->type) == word_Quote) {

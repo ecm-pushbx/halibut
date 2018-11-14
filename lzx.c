@@ -219,7 +219,7 @@ void lzx_lz77_inner(LZXInfo *info, const unsigned char *data, int len)
     lz77c.literal = lzx_literal;
     lz77c.match = lzx_match;
     lz77c.userdata = info;
-    lz77_compress(&lz77c, data, len, TRUE);
+    lz77_compress(&lz77c, data, len, true);
     lz77_cleanup(&lz77c);
 }
 
@@ -563,7 +563,7 @@ void lzx_encode_block(LZXSym *syms, int nsyms, int blocksize,
          * the whole-file header.
          */
         lzx_addsym(&header[0], LST_RAWBITS_BASE + 1, 0);
-        bs->first_block = FALSE;
+        bs->first_block = false;
     }
     lzx_addsym(&header[0], LST_RAWBITS_BASE + 3, blocktype);
     lzx_addsym(&header[0], LST_RAWBITS_BASE + 24, blocksize);
@@ -635,7 +635,7 @@ struct LZXEncodedFile *lzx(const void *vdata, int totallen,
          * block-boundary heuristics, but I don't really think it's
          * worth it.
          */
-        bs.first_block = TRUE; /* reset every time we reset the LZ state */
+        bs.first_block = true; /* reset every time we reset the LZ state */
         lzx_encode_block(buf.syms, buf.nsyms, thislen, &hufs, &bs);
 
         sfree(buf.syms);

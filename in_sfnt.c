@@ -460,10 +460,10 @@ static int sfnt_findtable(sfnt *sf, unsigned tag,
 	if (sf->td[i].tag == tag) {
 	    *startp = (char *)sf->data + sf->td[i].offset;
 	    *endp = (char *)*startp + sf->td[i].length;
-	    return TRUE;
+	    return true;
 	}
     }
-    return FALSE;
+    return false;
 }
 
 static char *sfnt_psname(font_info *fi) {

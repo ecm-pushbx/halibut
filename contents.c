@@ -53,7 +53,7 @@ static void dotext(word ***wret, wchar_t *text) {
     mnewword->type = word_Normal;
     mnewword->alt = NULL;
     mnewword->next = NULL;
-    mnewword->breaks = FALSE;
+    mnewword->breaks = false;
     mnewword->aux = 0;
     **wret = mnewword;
     *wret = &mnewword->next;
@@ -65,7 +65,7 @@ static void dospace(word ***wret) {
     mnewword->type = word_WhiteSpace;
     mnewword->alt = NULL;
     mnewword->next = NULL;
-    mnewword->breaks = FALSE;
+    mnewword->breaks = false;
     mnewword->aux = 0;
     **wret = mnewword;
     *wret = &mnewword->next;
@@ -159,7 +159,7 @@ word *number_mktext(numberstate *state, paragraph *p, wchar_t *category,
 	level = (p->type == para_Heading ? 0 : p->aux);
 	if (level > state->oklevel) {
 	    err_sectjump(&p->fpos);
-	    *errflag = TRUE;
+	    *errflag = true;
 	    ret = NULL;
 	    break;
 	}

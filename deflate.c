@@ -963,7 +963,7 @@ deflate_compress_ctx *deflate_compress_new(int type)
     out = snew(deflate_compress_ctx);
     out->type = type;
     out->outbits = out->noutbits = 0;
-    out->firstblock = TRUE;
+    out->firstblock = true;
 #ifdef STATISTICS
     out->bitcount = 0;
 #endif
@@ -973,8 +973,8 @@ deflate_compress_ctx *deflate_compress_new(int type)
 
     out->checksum = (type == DEFLATE_TYPE_ZLIB ? 1 : 0);
     out->datasize = 0;
-    out->lastblock = FALSE;
-    out->finished = FALSE;
+    out->lastblock = false;
+    out->finished = false;
 
     /*
      * Build the static Huffman tables now, so we'll have them
@@ -1060,13 +1060,13 @@ void deflate_compress_data(deflate_compress_ctx *out,
 	    outbits(out, 0xFF02, 16);  /* xflags, OS */
 	    break;
 	}
-	out->firstblock = FALSE;
+	out->firstblock = false;
     }
 
     /*
      * Feed our data to the LZ77 compression phase.
      */
-    lz77_compress(ectx, block, len, TRUE);
+    lz77_compress(ectx, block, len, true);
 
     /*
      * Update checksums and counters.
@@ -1112,7 +1112,7 @@ void deflate_compress_data(deflate_compress_ctx *out,
 	/*
 	 * Output a block with BFINAL set.
 	 */
-	out->lastblock = TRUE;
+	out->lastblock = true;
 	flushblock(out);
 
 	/*
@@ -1143,7 +1143,7 @@ void deflate_compress_data(deflate_compress_ctx *out,
 	    break;
 	}
 
-	out->finished = TRUE;
+	out->finished = true;
 	break;
     }
 
@@ -1366,7 +1366,7 @@ deflate_decompress_ctx *deflate_decompress_new(int type)
     dctx->nbits = 0;
     dctx->winpos = 0;
     dctx->type = type;
-    dctx->lastblock = FALSE;
+    dctx->lastblock = false;
     dctx->checksum = (type == DEFLATE_TYPE_ZLIB ? 1 : 0);
     dctx->bytesout = 0;
     dctx->gzflags = dctx->gzextralen = 0;
@@ -1623,7 +1623,7 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 		goto finished;	       /* done all we can */
 	    bfinal = dctx->bits & 1;
 	    if (bfinal)
-		dctx->lastblock = TRUE;
+		dctx->lastblock = true;
 	    EATBITS(1);
 	    btype = dctx->bits & 3;
 	    EATBITS(2);
@@ -2030,16 +2030,16 @@ int main(int argc, char **argv)
     int ret, err, outlen;
     deflate_decompress_ctx *dhandle;
     deflate_compress_ctx *chandle;
-    int type = DEFLATE_TYPE_ZLIB, opts = TRUE;
-    int compress = FALSE, decompress = FALSE;
-    int got_arg = FALSE;
+    int type = DEFLATE_TYPE_ZLIB, opts = true;
+    int compress = false, decompress = false;
+    int got_arg = false;
     char *filename = NULL;
     FILE *fp;
 
     while (--argc) {
         char *p = *++argv;
 
-	got_arg = TRUE;
+	got_arg = true;
 
         if (p[0] == '-' && opts) {
             if (!strcmp(p, "-b"))
@@ -2047,13 +2047,13 @@ int main(int argc, char **argv)
             else if (!strcmp(p, "-g"))
                 type = DEFLATE_TYPE_GZIP;
             else if (!strcmp(p, "-c"))
-                compress = TRUE;
+                compress = true;
             else if (!strcmp(p, "-d"))
-                decompress = TRUE;
+                decompress = true;
             else if (!strcmp(p, "-a"))
-                analyse_level++, decompress = TRUE;
+                analyse_level++, decompress = true;
             else if (!strcmp(p, "--"))
-                opts = FALSE;          /* next thing is filename */
+                opts = false;          /* next thing is filename */
             else {
                 fprintf(stderr, "unknown command line option '%s'\n", p);
                 return 1;
@@ -2159,14 +2159,14 @@ int main(int argc, char **argv)
     unsigned char buf[65536], *outbuf, *outbuf2;
     int ret, err, outlen, outlen2;
     int dlen = 0, clen = 0;
-    int opts = TRUE;
+    int opts = true;
 
     while (--argc) {
         char *p = *++argv;
 
         if (p[0] == '-' && opts) {
             if (!strcmp(p, "--"))
-                opts = FALSE;          /* next thing is filename */
+                opts = false;          /* next thing is filename */
             else {
                 fprintf(stderr, "unknown command line option '%s'\n", p);
                 return 1;

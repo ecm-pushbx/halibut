@@ -4546,7 +4546,7 @@ void init_std_fonts(void) {
     int i, j;
     ligature const *lig;
     kern_pair const *kern;
-    static int done = FALSE;
+    static int done = false;
 
     if (done) return;
     for (i = 0; i < (int)lenof(ps_std_fonts); i++) {
@@ -4576,7 +4576,7 @@ void init_std_fonts(void) {
 	fi->next = all_fonts;
 	all_fonts = fi;
     }
-    done = TRUE;
+    done = true;
 }
 
 const int *ps_std_font_widths(char const *fontname)

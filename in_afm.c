@@ -43,9 +43,9 @@ static int afm_require_key(char *line, char const *expected, input *in) {
     char *key = strtok(line, " \t");
 
     if (strcmp(key, expected) == 0)
-	return TRUE;
+	return true;
     err_afmkey(&in->pos, expected);
-    return FALSE;
+    return false;
 }
 
 void read_afm_file(input *in) {

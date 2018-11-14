@@ -99,8 +99,8 @@ static char const *troffchar(int unichar) {
 }
 
 /*
- * Return TRUE if we can represent the whole of the given string either
- * in the output charset or as named characters; FALSE otherwise.
+ * Return true if we can represent the whole of the given string either
+ * in the output charset or as named characters; false otherwise.
  */
 static int troff_ok(int charset, wchar_t *string) {
     wchar_t test[2];
@@ -108,10 +108,10 @@ static int troff_ok(int charset, wchar_t *string) {
 	test[0] = *string;
 	test[1] = 0;
 	if (!cvt_ok(charset, test) && !troffchar(*string))
-	    return FALSE;
+	    return false;
 	string++;
     }
-    return TRUE;
+    return true;
 }
 
 static manconfig man_configure(paragraph *source) {
@@ -122,7 +122,7 @@ static manconfig man_configure(paragraph *source) {
      * Defaults.
      */
     ret.th = NULL;
-    ret.headnumbers = FALSE;
+    ret.headnumbers = false;
     ret.mindepth = 0;
     ret.filename = dupstr("output.1");
     ret.charset = CS_ASCII;
@@ -248,7 +248,7 @@ void man_backend(paragraph *sourceform, keywordlist *keywords,
     for (p = sourceform; p; p = p->next)
 	if (p->type == para_VersionID) {
 	    fprintf(fp, ".\\\" ");
-	    man_text(fp, p->words, TRUE, 0, &conf);
+	    man_text(fp, p->words, true, 0, &conf);
 	}
 
     /* Standard preamble */
@@ -273,11 +273,11 @@ void man_backend(paragraph *sourceform, keywordlist *keywords,
     }
     fputc('\n', fp);
 
-    had_described_thing = FALSE;
+    had_described_thing = false;
 #define cleanup_described_thing do { \
     if (had_described_thing) \
 	fprintf(fp, "\n"); \
-    had_described_thing = FALSE; \
+    had_described_thing = false; \
 } while (0)
 
     for (p = sourceform; p; p = p->next) switch (p->type) {
@@ -317,10 +317,10 @@ void man_backend(paragraph *sourceform, keywordlist *keywords,
 		else
 		    fprintf(fp, ".SH \"");
 		if (conf.headnumbers && p->kwtext) {
-		    man_text(fp, p->kwtext, FALSE, QUOTE_QUOTES, &conf);
+		    man_text(fp, p->kwtext, false, QUOTE_QUOTES, &conf);
 		    fprintf(fp, " ");
 		}
-		man_text(fp, p->words, FALSE, QUOTE_QUOTES, &conf);
+		man_text(fp, p->words, false, QUOTE_QUOTES, &conf);
 		fprintf(fp, "\"\n");
 	    }
 	    break;
@@ -342,7 +342,7 @@ void man_backend(paragraph *sourceform, keywordlist *keywords,
       case para_Copyright:
 	cleanup_described_thing;
 	fprintf(fp, ".PP\n");
-	man_text(fp, p->words, TRUE, 0, &conf);
+	man_text(fp, p->words, true, 0, &conf);
 	break;
 
 	/*
@@ -363,7 +363,7 @@ void man_backend(paragraph *sourceform, keywordlist *keywords,
 	    sfree(bullettext);
 	} else if (p->type == para_NumberedList) {
 	    fprintf(fp, ".IP \"");
-	    man_text(fp, p->kwtext, FALSE, QUOTE_QUOTES, &conf);
+	    man_text(fp, p->kwtext, false, QUOTE_QUOTES, &conf);
 	    fprintf(fp, "\"\n");
 	} else if (p->type == para_Description) {
 	    if (had_described_thing) {
@@ -381,19 +381,19 @@ void man_backend(paragraph *sourceform, keywordlist *keywords,
 	    }
 	} else if (p->type == para_BiblioCited) {
 	    fprintf(fp, ".IP \"");
-	    man_text(fp, p->kwtext, FALSE, QUOTE_QUOTES, &conf);
+	    man_text(fp, p->kwtext, false, QUOTE_QUOTES, &conf);
 	    fprintf(fp, "\"\n");
 	}
-	man_text(fp, p->words, TRUE, 0, &conf);
-	had_described_thing = FALSE;
+	man_text(fp, p->words, true, 0, &conf);
+	had_described_thing = false;
 	break;
 
       case para_DescribedThing:
 	cleanup_described_thing;
 	fprintf(fp, ".IP \"");
-	man_text(fp, p->words, FALSE, QUOTE_QUOTES, &conf);
+	man_text(fp, p->words, false, QUOTE_QUOTES, &conf);
 	fprintf(fp, "\"\n");
-	had_described_thing = TRUE;
+	had_described_thing = true;
 	break;
 
       case para_Rule:
@@ -529,7 +529,7 @@ static int man_convert(wchar_t const *s, int maxlen,
 	if (err) {
 	    char const *tr = troffchar(*s);
 	    if (tr == NULL)
-		anyerr = TRUE;
+		anyerr = true;
 	    else
 		rdaddsc(&out, tr);
 	    s++; slen--;
@@ -628,11 +628,11 @@ static int man_rdaddwc(rdstringc *rs, word *text, word *end,
 
 	if (removeattr(text->type) == word_Normal) {
 	    charset_state s2 = *state;
-	    int len = ustrlen(text->text), hyphen = FALSE;
+	    int len = ustrlen(text->text), hyphen = false;
 
 	    if (text->breaks && len > 0 && text->text[len - 1] == '-') {
 		len--;
-		hyphen = TRUE;
+		hyphen = true;
 	    }
 	    if (len == 0 ||
 		man_convert(text->text, len, &c, quote_props, conf->charset,

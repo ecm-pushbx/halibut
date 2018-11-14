@@ -57,11 +57,11 @@ static char *ustrtoa_internal(wchar_t const *s, char *outbuf, int size,
 }
 
 char *ustrtoa(wchar_t const *s, char *outbuf, int size, int charset) {
-    return ustrtoa_internal(s, outbuf, size, charset, FALSE);
+    return ustrtoa_internal(s, outbuf, size, charset, false);
 }
 
 char *ustrtoa_careful(wchar_t const *s, char *outbuf, int size, int charset) {
-    return ustrtoa_internal(s, outbuf, size, charset, TRUE);
+    return ustrtoa_internal(s, outbuf, size, charset, true);
 }
 
 wchar_t *ustrfroma(char const *s, wchar_t *outbuf, int size, int charset) {
@@ -140,17 +140,17 @@ char *utoa_internal_dup(wchar_t const *s, int charset, int *lenp, int careful)
 
 char *utoa_dup(wchar_t const *s, int charset)
 {
-    return utoa_internal_dup(s, charset, NULL, FALSE);
+    return utoa_internal_dup(s, charset, NULL, false);
 }
 
 char *utoa_dup_len(wchar_t const *s, int charset, int *len)
 {
-    return utoa_internal_dup(s, charset, len, FALSE);
+    return utoa_internal_dup(s, charset, len, false);
 }
 
 char *utoa_careful_dup(wchar_t const *s, int charset)
 {
-    return utoa_internal_dup(s, charset, NULL, TRUE);
+    return utoa_internal_dup(s, charset, NULL, true);
 }
 
 wchar_t *ufroma_dup(char const *s, int charset) {
@@ -356,8 +356,8 @@ double utof(wchar_t const *s)
 int utob(wchar_t const *s) {
     if (!ustricmp(s, L"yes") || !ustricmp(s, L"y") ||
 	!ustricmp(s, L"true") || !ustricmp(s, L"t"))
-	return TRUE;
-    return FALSE;
+	return true;
+    return false;
 }
 
 int uisdigit(wchar_t c) {
@@ -460,9 +460,9 @@ int cvt_ok(int charset, const wchar_t *s)
 	(void)charset_from_unicode(&s, &len, buf, lenof(buf),
 				   charset, &state, &err);
 	if (err)
-	    return FALSE;
+	    return false;
     }
-    return TRUE;
+    return true;
 }
 
 /*

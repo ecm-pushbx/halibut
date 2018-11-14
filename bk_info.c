@@ -82,7 +82,7 @@ typedef struct {
     charset_state state;
     int wcmode;
 } info_data;
-#define EMPTY_INFO_DATA { { 0, 0, NULL }, 0, CHARSET_INIT_STATE, FALSE }
+#define EMPTY_INFO_DATA { { 0, 0, NULL }, 0, CHARSET_INIT_STATE, false }
 static const info_data empty_info_data = EMPTY_INFO_DATA;
 
 typedef struct node_tag node;
@@ -315,7 +315,7 @@ void info_backend(paragraph *sourceform, keywordlist *keywords,
     int nesting, nestindent;
     int indentb, indenta;
     int filepos;
-    int has_index = FALSE;
+    int has_index = false;
     info_data intro_text = EMPTY_INFO_DATA;
     node *topnode, *currnode;
     word bullet;
@@ -384,7 +384,7 @@ void info_backend(paragraph *sourceform, keywordlist *keywords,
 	    ii->nnodes = ii->nodesize = 0;
 	    ii->nodes = NULL;
 
-	    ii->length = info_rdaddwc(&id, entry->text, NULL, FALSE, &conf);
+	    ii->length = info_rdaddwc(&id, entry->text, NULL, false, &conf);
 
 	    ii->text = id.output.text;
 
@@ -512,7 +512,7 @@ void info_backend(paragraph *sourceform, keywordlist *keywords,
 
 	if (!currnode->up->started_menu) {
 	    info_rdaddsc(&currnode->up->text, "* Menu:\n\n");
-	    currnode->up->started_menu = TRUE;
+	    currnode->up->started_menu = true;
 	}
 	info_menu_item(&currnode->up->text, currnode, p, &conf);
 
@@ -907,7 +907,7 @@ static int info_rdaddwc(info_data *id, word *words, word *end, int xrefs,
 	    if (cvt_ok(id->charset, words->text) || !words->alt)
 		ret += info_rdadds(id, words->text);
 	    else
-		ret += info_rdaddwc(id, words->alt, NULL, FALSE, cfg);
+		ret += info_rdaddwc(id, words->alt, NULL, false, cfg);
 	} else if (removeattr(words->type) == word_WhiteSpace) {
 	    ret += info_rdadd(id, L' ');
 	} else if (removeattr(words->type) == word_Quote) {
@@ -1034,11 +1034,11 @@ static int info_width_internal(word *words, int xrefs, infoconfig *cfg) {
 
 static int info_width_noxrefs(void *ctx, word *words)
 {
-    return info_width_internal(words, FALSE, (infoconfig *)ctx);
+    return info_width_internal(words, false, (infoconfig *)ctx);
 }
 static int info_width_xrefs(void *ctx, word *words)
 {
-    return info_width_internal(words, TRUE, (infoconfig *)ctx);
+    return info_width_internal(words, true, (infoconfig *)ctx);
 }
 
 static void info_heading(info_data *text, word *tprefix,
@@ -1050,7 +1050,7 @@ static void info_heading(info_data *text, word *tprefix,
 
     length = 0;
     if (tprefix) {
-	length += info_rdaddwc(text, tprefix, NULL, FALSE, cfg);
+	length += info_rdaddwc(text, tprefix, NULL, false, cfg);
 	length += info_rdadds(text, cfg->sectsuffix);
     }
 
@@ -1060,7 +1060,7 @@ static void info_heading(info_data *text, word *tprefix,
     wrapping = wrap_para(words, firstlinewidth, wrapwidth,
 			 info_width_noxrefs, cfg, 0);
     for (p = wrapping; p; p = p->next) {
-	length += info_rdaddwc(text, p->begin, p->end, FALSE, cfg);
+	length += info_rdaddwc(text, p->begin, p->end, false, cfg);
 	info_rdadd(text, L'\n');
 	if (*align.underline) {
 	    while (length > 0) {
@@ -1100,7 +1100,7 @@ static void info_para(info_data *text, word *prefix, wchar_t *prefixextra,
     if (prefix) {
 	for (i = 0; i < indent; i++)
 	    info_rdadd(text, L' ');
-	e = info_rdaddwc(text, prefix, NULL, FALSE, cfg);
+	e = info_rdaddwc(text, prefix, NULL, false, cfg);
 	if (prefixextra)
 	    e += info_rdadds(text, prefixextra);
 	/* If the prefix is too long, shorten the first line to fit. */
@@ -1122,7 +1122,7 @@ static void info_para(info_data *text, word *prefix, wchar_t *prefixextra,
     for (p = wrapping; p; p = p->next) {
 	for (i = 0; i < e; i++)
 	    info_rdadd(text, L' ');
-	info_rdaddwc(text, p->begin, p->end, TRUE, cfg);
+	info_rdaddwc(text, p->begin, p->end, true, cfg);
 	info_rdadd(text, L'\n');
 	e = indent + extraindent;
     }
@@ -1150,7 +1150,7 @@ static void info_codepara(info_data *text, word *words,
 
 static void info_versionid(info_data *text, word *words, infoconfig *cfg) {
     info_rdadd(text, L'[');
-    info_rdaddwc(text, words, NULL, FALSE, cfg);
+    info_rdaddwc(text, words, NULL, false, cfg);
     info_rdadds(text, L"]\n");
 }
 
@@ -1163,7 +1163,7 @@ static node *info_node_new(char *name, int charset)
     n->text.charset = charset;
     n->up = n->next = n->prev = n->lastchild = n->listnext = NULL;
     n->name = dupstr(name);
-    n->started_menu = FALSE;
+    n->started_menu = false;
 
     return n;
 }
@@ -1196,7 +1196,7 @@ static char *info_node_name_for_para(paragraph *par, infoconfig *cfg)
 
     id.charset = cfg->charset;
     info_rdaddwc(&id, par->kwtext ? par->kwtext : par->words,
-		 NULL, FALSE, cfg);
+		 NULL, false, cfg);
     info_rdaddsc(&id, NULL);
 
     return info_node_name_core(&id, &par->fpos);
@@ -1234,7 +1234,7 @@ static void info_menu_item(info_data *text, node *n, paragraph *p,
     info_rdaddsc(text, "::");
     if (p) {
 	info_rdaddc(text, ' ');
-	info_rdaddwc(text, p->words, NULL, FALSE, cfg);
+	info_rdaddwc(text, p->words, NULL, false, cfg);
     }
     info_rdaddc(text, '\n');
 }
@@ -1253,7 +1253,7 @@ static int info_rdadds(info_data *d, wchar_t const *wcs)
 {
     if (!d->wcmode) {
 	d->state = charset_init_state;
-	d->wcmode = TRUE;
+	d->wcmode = true;
     }
 
     if (wcs) {
@@ -1295,7 +1295,7 @@ static int info_rdaddsc(info_data *d, char const *cs)
 	    rdaddsc(&d->output, buf);
 	}
 
-	d->wcmode = FALSE;
+	d->wcmode = false;
     }
 
     if (cs) {

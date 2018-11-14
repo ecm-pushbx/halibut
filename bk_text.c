@@ -66,8 +66,8 @@ static textconfig text_configure(paragraph *source) {
     ret.bullet.next = NULL;
     ret.bullet.alt = NULL;
     ret.bullet.type = word_Normal;
-    ret.atitle.just_numbers = FALSE;   /* ignored */
-    ret.atitle.number_at_all = TRUE;   /* ignored */
+    ret.atitle.just_numbers = false;   /* ignored */
+    ret.atitle.number_at_all = true;   /* ignored */
 
     /*
      * Defaults.
@@ -80,19 +80,19 @@ static textconfig text_configure(paragraph *source) {
     ret.atitle.align = CENTRE;
     ret.atitle.underline = L"\x2550\0=\0\0";
     ret.achapter.align = LEFT;
-    ret.achapter.just_numbers = FALSE;
-    ret.achapter.number_at_all = TRUE;
+    ret.achapter.just_numbers = false;
+    ret.achapter.number_at_all = true;
     ret.achapter.number_suffix = L": ";
     ret.achapter.underline = L"\x203E\0-\0\0";
     ret.nasect = 1;
     ret.asect = snewn(ret.nasect, alignstruct);
     ret.asect[0].align = LEFTPLUS;
-    ret.asect[0].just_numbers = TRUE;
-    ret.asect[0].number_at_all = TRUE;
+    ret.asect[0].just_numbers = true;
+    ret.asect[0].number_at_all = true;
     ret.asect[0].number_suffix = L" ";
     ret.asect[0].underline = L"\0";
-    ret.include_version_id = TRUE;
-    ret.indent_preambles = FALSE;
+    ret.include_version_id = true;
+    ret.indent_preambles = false;
     ret.bullet.text = L"\x2022\0-\0\0";
     ret.rule = L"\x2500\0-\0\0";
     ret.filename = dupstr("output.txt");

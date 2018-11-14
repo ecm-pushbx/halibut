@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
      */
     infiles = snewn(argc, char *);
     nfiles = 0;
-    nogo = errs = FALSE;
+    nogo = errs = false;
     reportcols = 0;
     list_fonts = 0;
     input_charset = CS_ASCII;
@@ -129,34 +129,34 @@ int main(int argc, char **argv) {
 			    /* do nothing */;
 			} else if (!strcmp(opt, "-input-charset")) {
 			    if (!val) {
-				errs = TRUE, err_optnoarg(opt);
+				errs = true, err_optnoarg(opt);
 			    } else {
 				int charset = charset_from_localenc(val);
 				if (charset == CS_NONE) {
-				    errs = TRUE, err_cmdcharset(val);
+				    errs = true, err_cmdcharset(val);
 				} else {
 				    input_charset = charset;
 				}
 			    }
 			} else if (!strcmp(opt, "-help")) {
 			    help();
-			    nogo = TRUE;
+			    nogo = true;
 			} else if (!strcmp(opt, "-version")) {
 			    showversion();
-			    nogo = TRUE;
+			    nogo = true;
 			} else if (!strcmp(opt, "-licence") ||
 				   !strcmp(opt, "-license")) {
 			    licence();
-			    nogo = TRUE;
+			    nogo = true;
 			} else if (!strcmp(opt, "-list-charsets")) {
 			    listcharsets();
-			    nogo = TRUE;
+			    nogo = true;
 			} else if (!strcmp(opt, "-list-fonts")) {
-			    list_fonts = TRUE;
+			    list_fonts = true;
 			} else if (!strcmp(opt, "-precise")) {
 			    reportcols = 1;
 			} else {
-			    errs = TRUE, err_nosuchopt(opt);
+			    errs = true, err_nosuchopt(opt);
 			}
 		    }
 		    p = NULL;
@@ -172,21 +172,21 @@ int main(int argc, char **argv) {
 		    switch (c) {
 		      case 'h':
 			help();
-			nogo = TRUE;
+			nogo = true;
 			break;
 		      case 'V':
 			showversion();
-			nogo = TRUE;
+			nogo = true;
 			break;
 		      case 'L':
 			licence();
-			nogo = TRUE;
+			nogo = true;
 			break;
 		      case 'P':
 			reportcols = 1;
 			break;
 		      case 'd':
-			debug = TRUE;
+			debug = true;
 			break;
 		    }
 		    break;
@@ -201,7 +201,7 @@ int main(int argc, char **argv) {
 			char opt[2];
 			opt[0] = c;
 			opt[1] = '\0';
-			errs = TRUE, err_optnoarg(opt);
+			errs = true, err_optnoarg(opt);
 		    }
 		    /*
 		     * Now c is the option and p is the parameter.
@@ -257,7 +257,7 @@ int main(int argc, char **argv) {
 			char opt[2];
 			opt[0] = c;
 			opt[1] = '\0';
-			errs = TRUE, err_nosuchopt(opt);
+			errs = true, err_nosuchopt(opt);
 		    }
 		}
 	    }
@@ -339,7 +339,7 @@ int main(int argc, char **argv) {
 
 	for (p = sourceform; p; p = p->next)
 	    if (p->type == para_IM)
-		index_merge(idx, TRUE, p->keyword, p->words, &p->fpos);
+		index_merge(idx, true, p->keyword, p->words, &p->fpos);
 
 	build_index(idx);
 

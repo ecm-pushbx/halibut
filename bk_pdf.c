@@ -606,7 +606,7 @@ void pdf_backend(paragraph *sourceform, keywordlist *keywords,
 
 	objtext(outlines, "<<\n/Type /Outlines\n");
 	topcount = make_outline(outlines, doc->outline_elements,
-				doc->n_outline_elements, TRUE);
+				doc->n_outline_elements, true);
 	sprintf(buf, "/Count %d\n>>\n", topcount);
 	objtext(outlines, buf);
     }
@@ -788,8 +788,8 @@ static int is_std_font(char const *name) {
     unsigned i;
     for (i = 0; i < lenof(stdfonts); i++)
 	if (strcmp(name, stdfonts[i]) == 0)
-	    return TRUE;
-    return FALSE;
+	    return true;
+    return false;
 }
 
 static void make_pages_node(object *node, object *parent, page_data *first,
@@ -965,7 +965,7 @@ static int make_outline(object *parent, outline_element *items, int n,
 
 	if (itemp > items) {
 	    char buf[80];
-	    int count = make_outline(curr, items, itemp - items, FALSE);
+	    int count = make_outline(curr, items, itemp - items, false);
 	    if (!open)
 		count = -count;
 	    else

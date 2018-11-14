@@ -28,7 +28,7 @@ void lz77_cleanup(struct LZ77Context *ctx);
 /*
  * Supply data to be compressed. Will update the private fields of
  * the LZ77Context, and will call literal() and match() to output.
- * If `compress' is FALSE, it will never emit a match, but will
+ * If `compress' is false, it will never emit a match, but will
  * instead call literal() for everything.
  */
 void lz77_compress(struct LZ77Context *ctx,

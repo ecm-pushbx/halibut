@@ -178,14 +178,14 @@ static int fonts_ok(wchar_t *string, ...)
 {
     font_data *font;
     va_list ap;
-    int ret = TRUE;
+    int ret = true;
 
     va_start(ap, string);
     while ( (font = va_arg(ap, font_data *)) != NULL) {
 	int errs;
 	(void) string_width(font, string, &errs, 0);
 	if (errs) {
-	    ret = FALSE;
+	    ret = false;
 	    break;
 	}
     }
@@ -551,12 +551,12 @@ void *paper_pre_backend(paragraph *sourceform, keywordlist *keywords,
 	int i;
 	indexentry *entry;
 
-	has_index = FALSE;
+	has_index = false;
 
 	for (i = 0; (entry = index234(idx->entries, i)) != NULL; i++) {
 	    paper_idx *pi = snew(paper_idx);
 
-	    has_index = TRUE;
+	    has_index = true;
 
 	    pi->words = pi->lastword = NULL;
 	    pi->lastpage = NULL;
@@ -663,7 +663,7 @@ void *paper_pre_backend(paragraph *sourceform, keywordlist *keywords,
      * Do the main paragraph formatting.
      */
     indent = 0;
-    used_contents = FALSE;
+    used_contents = false;
     firstline = lastline = NULL;
     for (p = sourceform; p; p = p->next) {
 	p->private_data = NULL;
@@ -753,7 +753,7 @@ void *paper_pre_backend(paragraph *sourceform, keywordlist *keywords,
 	     * contents section in before it.
 	     */
 	    if (!used_contents && pdata->outline_level > 0) {
-		used_contents = TRUE;
+		used_contents = true;
 		if (lastpara)
 		    lastpara->next = firstcont;
 		else
@@ -1319,7 +1319,7 @@ static para_data *make_para_data(int ptype, int paux, int indent, int rmargin,
 	ptype == para_Chapter ||
 	ptype == para_Appendix ||
 	ptype == para_UnnumberedChapter) {
-	pdata->first->page_break = TRUE;
+	pdata->first->page_break = true;
 	pdata->first->space_before = conf->chapter_top_space;
 	pdata->last->space_after +=
 	    (conf->chapter_underline_depth +
@@ -1346,7 +1346,7 @@ static void standard_line_spacing(para_data *pdata, paper_conf *conf)
 	    ldata->space_after = conf->base_para_spacing / 2;
 	else
 	    ldata->space_after = conf->base_leading / 2;
-	ldata->page_break = FALSE;
+	ldata->page_break = false;
     }
 }
 
@@ -2561,7 +2561,7 @@ static para_data *code_paragraph(int indent, word *words, paper_conf *conf)
 	    w->text = snewn(t-start+1, wchar_t);
 	    memcpy(w->text, start, (t-start) * sizeof(wchar_t));
 	    w->text[t-start] = '\0';
-	    w->breaks = FALSE;
+	    w->breaks = false;
 	    w->aux = 0;
 
 	    if (ltail)
@@ -2735,7 +2735,7 @@ static word *fake_word(wchar_t *text)
     ret->alt = NULL;
     ret->type = word_Normal;
     ret->text = ustrdup(text);
-    ret->breaks = FALSE;
+    ret->breaks = false;
     ret->aux = 0;
     return ret;
 }
@@ -2747,7 +2747,7 @@ static word *fake_space_word(void)
     ret->alt = NULL;
     ret->type = word_WhiteSpace;
     ret->text = NULL;
-    ret->breaks = TRUE;
+    ret->breaks = true;
     ret->aux = 0;
     return ret;
 }
@@ -2759,7 +2759,7 @@ static word *fake_page_ref(page_data *page)
     ret->alt = NULL;
     ret->type = word_PageXref;
     ret->text = NULL;
-    ret->breaks = FALSE;
+    ret->breaks = false;
     ret->aux = 0;
     ret->private_data = page;
     return ret;
@@ -2772,7 +2772,7 @@ static word *fake_end_ref(void)
     ret->alt = NULL;
     ret->type = word_XrefEnd;
     ret->text = NULL;
-    ret->breaks = FALSE;
+    ret->breaks = false;
     ret->aux = 0;
     return ret;
 }
