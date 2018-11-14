@@ -22,7 +22,8 @@ wchar_t *ustrdup(wchar_t const *s) {
 
 static char *ustrtoa_internal(wchar_t const *s, char *outbuf, int size,
 			      int charset, int careful) {
-    int len, ret, err;
+    int len, ret;
+    bool err;
     charset_state state = CHARSET_INIT_STATE;
 
     if (!s) {
@@ -34,7 +35,7 @@ static char *ustrtoa_internal(wchar_t const *s, char *outbuf, int size,
     size--;			       /* leave room for terminating NUL */
     *outbuf = '\0';
     while (len > 0) {
-	err = 0;
+	err = false;
 	ret = charset_from_unicode(&s, &len, outbuf, size, charset, &state,
 				   (careful ? &err : NULL));
 	if (err)
@@ -90,7 +91,8 @@ wchar_t *ustrfroma(char const *s, wchar_t *outbuf, int size, int charset) {
 char *utoa_internal_dup(wchar_t const *s, int charset, int *lenp, int careful)
 {
     char *outbuf;
-    int outpos, outlen, len, ret, err;
+    int outpos, outlen, len, ret;
+    bool err;
     charset_state state = CHARSET_INIT_STATE;
 
     if (!s) {
@@ -106,7 +108,7 @@ char *utoa_internal_dup(wchar_t const *s, int charset, int *lenp, int careful)
     outbuf[outpos] = '\0';
 
     while (len > 0) {
-	err = 0;
+	err = false;
 	ret = charset_from_unicode(&s, &len,
 				   outbuf + outpos, outlen - outpos - 1,
 				   charset, &state, (careful ? &err : NULL));
@@ -450,9 +452,10 @@ int cvt_ok(int charset, const wchar_t *s)
 {
     char buf[256];
     charset_state state = CHARSET_INIT_STATE;
-    int err, len = ustrlen(s);
+    bool err;
+    int len = ustrlen(s);
 
-    err = 0;
+    err = false;
     while (len > 0) {
 	(void)charset_from_unicode(&s, &len, buf, lenof(buf),
 				   charset, &state, &err);

@@ -2858,7 +2858,8 @@ static void html_text_limit_internal(htmloutput *ho, wchar_t const *text,
 {
     int textlen = ustrlen(text);
     char outbuf[256];
-    int bytes, err;
+    int bytes;
+    bool err;
 
     if (ho->hackflags & (HO_HACK_QUOTEQUOTES | HO_HACK_OMITQUOTES))
 	quote_quotes = TRUE;	       /* override the input value */

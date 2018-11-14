@@ -144,10 +144,10 @@ int ustrwid(wchar_t const *s, int charset)
     wid = 0;
 
     while (len > 0) {
-	int err;
+	bool err;
 	wchar_t const *s_orig;
 
-	err = 0;
+	err = false;
 	s_orig = s;
         charset_from_unicode(&s, &len, buf, lenof(buf), charset, &state, &err);
 	wid += wcswidth(s_orig, s - s_orig);

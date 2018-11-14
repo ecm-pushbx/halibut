@@ -452,10 +452,11 @@ static int man_convert(wchar_t const *s, int maxlen,
 		       char **result, int quote_props,
 		       int charset, charset_state *state) {
     charset_state internal_state = CHARSET_INIT_STATE;
-    int slen, err;
+    int slen;
     char *p = NULL, *q;
     int plen = 0, psize = 0;
     rdstringc out = {0, 0, NULL};
+    bool err;
     int anyerr = 0;
 
     if (!state)
@@ -469,7 +470,7 @@ static int man_convert(wchar_t const *s, int maxlen,
     psize = 384;
     plen = 0;
     p = snewn(psize, char);
-    err = 0;
+    err = false;
 
     while (slen > 0) {
 	int ret = charset_from_unicode(&s, &slen, p, psize,
