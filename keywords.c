@@ -32,7 +32,7 @@ keyword *kw_lookup(keywordlist *kl, wchar_t *str) {
  * finish).
  */
 keywordlist *get_keywords(paragraph *source) {
-    int errors = false;
+    bool errors = false;
     keywordlist *kl = snew(keywordlist);
     numberstate *n = number_init();
     int prevpara = para_NotParaType;

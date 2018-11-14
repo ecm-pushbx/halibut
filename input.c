@@ -54,8 +54,8 @@ static void macrodef(tree234 *macros, wchar_t *name, wchar_t *text,
 	sfree(text);
     }
 }
-static int macrolookup(tree234 *macros, input *in, wchar_t *name,
-		       filepos *pos) {
+static bool macrolookup(tree234 *macros, input *in, wchar_t *name,
+                        filepos *pos) {
     macro m, *gotit;
     m.name = name;
     gotit = find234(macros, &m, NULL);
@@ -519,7 +519,7 @@ token get_token(input *in) {
  * telling code paragraphs from paragraphs which merely start with
  * code).
  */
-int isbrace(input *in) {
+bool isbrace(input *in) {
     int c;
     filepos cpos;
 
@@ -602,8 +602,8 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
     word wd, **whptr, **idximplicit;
     wchar_t utext[2], *wdtext;
     int style, spcstyle;
-    int already;
-    int iswhite, seenwhite;
+    bool already;
+    bool iswhite, seenwhite;
     int type;
     int prev_para_type;
     struct stack_item {
@@ -623,13 +623,13 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
     stack parsestk;
     struct crossparaitem {
  	int type;		       /* currently c_lcont, c_quote or -1 */
-	int seen_lcont, seen_quote;
+	bool seen_lcont, seen_quote;
     };
     stack crossparastk;
     word *indexword, *uword, *iword;
     word *idxwordlist;
     rdstring indexstr;
-    int index_downcase, index_visible, indexing;
+    bool index_downcase, index_visible, indexing;
     const rdstring nullrs = { 0, 0, NULL };
     wchar_t uchr;
 
@@ -766,16 +766,18 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 		 */
 		sitem = snew(struct crossparaitem);
 		stop = (struct crossparaitem *)stk_top(crossparastk);
-		if (stop)
+		if (stop) {
 		    *sitem = *stop;
-		else
-		    sitem->seen_quote = sitem->seen_lcont = 0;
+                } else {
+		    sitem->seen_quote = false;
+                    sitem->seen_lcont = false;
+                }
 
 		if (prev_para_type == para_Bullet ||
 		    prev_para_type == para_NumberedList ||
 		    prev_para_type == para_Description) {
 		    sitem->type = c_lcont;
-		    sitem->seen_lcont = 1;
+		    sitem->seen_lcont = true;
 		    par.type = para_LcontPush;
 		    prev_para_type = par.type;
 		    addpara(par, ret);
@@ -796,12 +798,14 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 		 */
 		sitem = snew(struct crossparaitem);
 		stop = (struct crossparaitem *)stk_top(crossparastk);
-		if (stop)
+		if (stop) {
 		    *sitem = *stop;
-		else
-		    sitem->seen_quote = sitem->seen_lcont = 0;
+                } else {
+		    sitem->seen_quote = false;
+                    sitem->seen_lcont = false;
+                }
 		sitem->type = c_quote;
-		sitem->seen_quote = 1;
+		sitem->seen_quote = true;
 		par.type = para_QuotePush;
 		prev_para_type = par.type;
 		addpara(par, ret);
@@ -845,7 +849,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 	par.type = para_Normal;
 	if (t.type == tok_cmd) {
 	    int needkw;
-	    int is_macro = false;
+	    bool is_macro = false;
 
 	    par.fpos = t.pos;
 	    switch (t.cmd) {
@@ -1608,7 +1612,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 struct {
     char const *magic;
     size_t nmagic;
-    int binary;
+    bool binary;
     void (*reader)(input *);
 } magics[] = {
     { "%!FontType1-",     12, false, &read_pfa_file },
@@ -1625,7 +1629,7 @@ paragraph *read_input(input *in, indexdata *idx) {
     tree234 *macros;
     char mag[16];
     size_t len, i;
-    int binary;
+    bool binary;
     void (*reader)(input *);
 
     macros = newtree234(macrocmp);

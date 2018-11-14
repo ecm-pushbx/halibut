@@ -32,4 +32,4 @@ void lz77_cleanup(struct LZ77Context *ctx);
  * instead call literal() for everything.
  */
 void lz77_compress(struct LZ77Context *ctx,
-                   const unsigned char *data, int len, int compress);
+                   const unsigned char *data, int len, bool compress);

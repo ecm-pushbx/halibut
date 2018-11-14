@@ -117,7 +117,7 @@ static void lz77_advance(struct LZ77InternalContext *st,
 #define CHARAT(k) ( (k)<0 ? st->data[(st->winpos+k)%st->winsize] : data[k] )
 
 void lz77_compress(struct LZ77Context *ctx,
-                   const unsigned char *data, int len, int compress)
+                   const unsigned char *data, int len, bool compress)
 {
     struct LZ77InternalContext *st = ctx->ictx;
     int i, hash, distance, off, nmatch, matchlen, advance;

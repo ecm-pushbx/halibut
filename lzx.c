@@ -397,7 +397,7 @@ typedef struct LZXBitstream {
     size_t data_size, resets_size;
     unsigned short bitbuffer;
     int nbits;
-    int first_block;
+    bool first_block;
 } LZXBitstream;
 
 void lzx_write_bits(LZXBitstream *bs, int value, int bits)

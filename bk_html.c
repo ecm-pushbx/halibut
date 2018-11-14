@@ -38,7 +38,7 @@
 			   (p)->type == para_Title ? -1 : 0 )
 
 typedef struct {
-    int number_at_all, just_numbers;
+    bool number_at_all, just_numbers;
     wchar_t *number_suffix;
 } sectlevel;
 
@@ -47,10 +47,11 @@ typedef struct {
     sectlevel achapter, *asect;
     int *contents_depths;	       /* 0=main, 1=chapter, 2=sect etc */
     int ncdepths;
-    int address_section, visible_version_id;
-    int leaf_contains_contents, leaf_smallest_contents;
-    int navlinks;
-    int rellinks;
+    bool address_section, visible_version_id;
+    bool leaf_contains_contents;
+    int leaf_smallest_contents;
+    bool navlinks;
+    bool rellinks;
     char *contents_filename;
     char *index_filename;
     char *template_filename;
@@ -136,7 +137,7 @@ typedef struct {
 typedef struct {
     htmlsect *section;
     char *fragment;
-    int generated, referenced;
+    bool generated, referenced;
 } htmlindexref;
 
 typedef struct {
@@ -313,7 +314,7 @@ static void html_text(htmloutput *ho, wchar_t const *str);
 static void html_text_nbsp(htmloutput *ho, wchar_t const *str);
 static void html_text_limit(htmloutput *ho, wchar_t const *str, int maxlen);
 static void html_text_limit_internal(htmloutput *ho, wchar_t const *text,
-				     int maxlen, int quote_quotes, int nbsp);
+				     int maxlen, bool quote_quotes, bool nbsp);
 static void html_nl(htmloutput *ho);
 static void html_raw(htmloutput *ho, char *text);
 static void html_raw_as_attr(htmloutput *ho, char *text);
@@ -333,9 +334,9 @@ static void html_contents_entry(htmloutput *ho, int depth, htmlsect *s,
 				htmlconfig *cfg);
 static void html_section_title(htmloutput *ho, htmlsect *s,
 			       htmlfile *thisfile, keywordlist *keywords,
-			       htmlconfig *cfg, int real);
+			       htmlconfig *cfg, bool real);
 
-static htmlconfig html_configure(paragraph *source, int chm_mode)
+static htmlconfig html_configure(paragraph *source, bool chm_mode)
 {
     htmlconfig ret;
     paragraph *p;
@@ -427,7 +428,7 @@ static htmlconfig html_configure(paragraph *source, int chm_mode)
     for (p = source; p; p = p->next) {
 	if (p->type == para_Config) {
 	    wchar_t *k = p->keyword;
-            int generic = false;
+            bool generic = false;
 
             if (!chm_mode && !ustrnicmp(k, L"html-", 5)) {
                 k += 5;
@@ -757,7 +758,7 @@ paragraph *chm_config_filename(char *filename)
 }
 
 static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
-                                indexdata *idx, int chm_mode)
+                                indexdata *idx, bool chm_mode)
 {
     paragraph *p;
     htmlsect *topsect;
@@ -765,7 +766,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
     htmlfilelist files = { NULL, NULL, NULL, NULL, NULL, NULL };
     htmlsectlist sects = { NULL, NULL }, nonsects = { NULL, NULL };
     struct chm *chm = NULL;
-    int has_index, hhk_needed = false;
+    bool has_index, hhk_needed = false;
 
     conf = html_configure(sourceform, chm_mode);
 
@@ -1037,7 +1038,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 
 	for (f = files.head; f; f = f->next) {
 	    htmloutput ho;
-	    int displaying;
+	    bool displaying;
 	    enum LISTTYPE { NOLIST, UL, OL, DL };
 	    enum ITEMTYPE { NOITEM, LI, DT, DD };
 	    struct stackelement {
@@ -1329,7 +1330,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 	    {
 		int ntoc = 0, tocsize = 0, tocstartidx = 0;
 		htmlsect **toc = NULL;
-		int leaf = true;
+		bool leaf = true;
 
 		for (s = sects.head; s; s = s->next) {
 		    htmlsect *a, *ac;
@@ -1755,7 +1756,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 		/*
 		 * Footer.
 		 */
-		int done_version_ids = false;
+		bool done_version_ids = false;
 
 		if (conf.address_section)
 		    element_empty(&ho, "hr");
@@ -1764,7 +1765,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 		    html_raw(&ho, conf.body_end);
 
 		if (conf.address_section) {
-		    int started = false;
+		    bool started = false;
 		    if (conf.htmlver == ISO_HTML) {
 			/*
 			 * The ISO-HTML validator complains if
@@ -1814,7 +1815,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 		     * visible, I think we still have a duty to put
 		     * them in an HTML comment.
 		     */
-		    int started = false;
+		    bool started = false;
 		    for (p = sourceform; p; p = p->next)
 			if (p->type == para_VersionID) {
 			    if (!started) {
@@ -1844,7 +1845,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
      * if the index contains nothing.
      */
     if (chm_mode || conf.hhk_filename) {
-	int ok = false;
+	bool ok = false;
 	int i;
 	indexentry *entry;
 
@@ -2129,7 +2130,8 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 	    /*
 	     * For each HTML file, write out a contents entry.
 	     */
-	    int depth, leaf = true;
+	    int depth;
+            bool leaf = true;
 
 	    /*
 	     * Determine the depth of this file in the contents
@@ -2326,7 +2328,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 	    if (w->type == word_IndexRef) {
 		htmlindexref *hr = (htmlindexref *)w->private_data;
 
-		assert(!hr->referenced == !hr->generated);
+		assert(hr->referenced == hr->generated);
 	    }
     }
 
@@ -2854,7 +2856,7 @@ static void html_text_limit(htmloutput *ho, wchar_t const *text, int maxlen)
 }
 
 static void html_text_limit_internal(htmloutput *ho, wchar_t const *text,
-				     int maxlen, int quote_quotes, int nbsp)
+				     int maxlen, bool quote_quotes, bool nbsp)
 {
     int textlen = ustrlen(text);
     char outbuf[256];
@@ -3202,7 +3204,7 @@ static void html_contents_entry(htmloutput *ho, int depth, htmlsect *s,
 
 static void html_section_title(htmloutput *ho, htmlsect *s, htmlfile *thisfile,
 			       keywordlist *keywords, htmlconfig *cfg,
-			       int real)
+			       bool real)
 {
     if (s->title) {
 	sectlevel *sl;

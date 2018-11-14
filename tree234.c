@@ -1333,7 +1333,7 @@ static node234 *split234_internal(tree234 *t, int index) {
 		 * over to it until it is greater than minimum
 		 * size.
 		 */
-		int undersized = (!sub->elems[0]);
+		bool undersized = (!sub->elems[0]);
 		LOG(("  child %d is %ssize\n", ki,
 		     undersized ? "under" : "minimum-"));
 		LOG(("  neighbour is %s\n",
@@ -1372,7 +1372,7 @@ static node234 *split234_internal(tree234 *t, int index) {
     t->root = halves[1];
     return halves[0];
 }
-tree234 *splitpos234(tree234 *t, int index, int before) {
+tree234 *splitpos234(tree234 *t, int index, bool before) {
     tree234 *ret;
     node234 *n;
     int count;

@@ -211,7 +211,7 @@ static void pf_identify(t1_font *tf) {
 /*
  * PostScript white space characters; PLRM3 table 3.1
  */
-static int pf_isspace(int c) {
+static bool pf_isspace(int c) {
     return c == 000 || c == 011 || c == 012 || c == 014 || c == 015 ||
 	c == ' ';
 }
@@ -219,7 +219,7 @@ static int pf_isspace(int c) {
 /*
  * PostScript special characters; PLRM3 page 27
  */
-static int pf_isspecial(int c) {
+static bool pf_isspecial(int c) {
     return c == '(' || c == ')' || c == '<' || c == '>' || c == '[' ||
 	c == ']' || c == '{' || c == '}' || c == '/' || c == '%';
 }
@@ -325,7 +325,7 @@ static void pf_getbinary(t1_font *tf, size_t off, size_t len,
 			 char **bufp, size_t *lenp) {
     t1_data *td = tf->data;
     size_t blk, i;
-    int havenybble = 0;
+    bool havenybble = false;
     char *p, nybble;
 
     while (td && off >= td->length) {

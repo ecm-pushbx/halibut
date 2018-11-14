@@ -80,7 +80,7 @@ typedef struct {
     rdstringc output;
     int charset;
     charset_state state;
-    int wcmode;
+    bool wcmode;
 } info_data;
 #define EMPTY_INFO_DATA { { 0, 0, NULL }, 0, CHARSET_INIT_STATE, false }
 static const info_data empty_info_data = EMPTY_INFO_DATA;
@@ -89,7 +89,8 @@ typedef struct node_tag node;
 struct node_tag {
     node *listnext;
     node *up, *prev, *next, *lastchild;
-    int pos, started_menu, filenum;
+    int pos, filenum;
+    bool started_menu;
     char *name;
     info_data text;
 };
@@ -117,7 +118,7 @@ static void info_menu_item(info_data *, node *, paragraph *, infoconfig *);
 static word *info_transform_wordlist(word *, keywordlist *);
 static int info_check_index(word *, node *, indexdata *);
 
-static int info_rdaddwc(info_data *, word *, word *, int, infoconfig *);
+static int info_rdaddwc(info_data *, word *, word *, bool, infoconfig *);
 
 static node *info_node_new(char *name, int charset);
 static char *info_node_name_for_para(paragraph *p, infoconfig *);
@@ -315,7 +316,7 @@ void info_backend(paragraph *sourceform, keywordlist *keywords,
     int nesting, nestindent;
     int indentb, indenta;
     int filepos;
-    int has_index = false;
+    bool has_index = false;
     info_data intro_text = EMPTY_INFO_DATA;
     node *topnode, *currnode;
     word bullet;
@@ -863,7 +864,7 @@ static word *info_transform_wordlist(word *words, keywordlist *keywords)
     return ret;
 }
 
-static int info_rdaddwc(info_data *id, word *words, word *end, int xrefs,
+static int info_rdaddwc(info_data *id, word *words, word *end, bool xrefs,
 			infoconfig *cfg) {
     int ret = 0;
 
@@ -945,9 +946,9 @@ static int info_rdaddwc(info_data *id, word *words, word *end, int xrefs,
     return ret;
 }
 
-static int info_width_internal(word *words, int xrefs, infoconfig *cfg);
+static int info_width_internal(word *words, bool xrefs, infoconfig *cfg);
 
-static int info_width_internal_list(word *words, int xrefs, infoconfig *cfg) {
+static int info_width_internal_list(word *words, bool xrefs, infoconfig *cfg) {
     int w = 0;
     while (words) {
 	w += info_width_internal(words, xrefs, cfg);
@@ -956,7 +957,7 @@ static int info_width_internal_list(word *words, int xrefs, infoconfig *cfg) {
     return w;
 }
 
-static int info_width_internal(word *words, int xrefs, infoconfig *cfg) {
+static int info_width_internal(word *words, bool xrefs, infoconfig *cfg) {
     int wid;
     int attr;
 

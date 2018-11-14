@@ -7,6 +7,10 @@
 #include <string.h>
 #include <stdbool.h>
 
+#ifdef BOOLIFY
+# include "boolify.h"
+#endif
+
 #include "charset.h"
 
 #ifdef __GNUC__
@@ -56,11 +60,11 @@ struct input_Tag {
     int nfiles;			       /* how many in the list */
     FILE *currfp;		       /* the currently open one */
     int currindex;		       /* which one is that in the list */
-    int wantclose;		       /* does the current file want closing */
+    bool wantclose;                    /* does the current file want closing */
     pushback *pushback;		       /* pushed-back input characters */
     int npushback, pushbacksize;
     filepos pos;
-    int reportcols;		       /* report column numbers in errors */
+    bool reportcols;                   /* report column numbers in errors */
     macrostack *stack;		       /* macro expansions in force */
     int defcharset, charset;	       /* character sets for input files */
     charset_state csstate;
@@ -130,7 +134,7 @@ struct word_Tag {
     word *next, *alt;
     int type;
     int aux;
-    int breaks;			       /* can a line break after it? */
+    bool breaks;                       /* can a line break after it? */
     wchar_t *text;
     filepos fpos;
 
@@ -363,17 +367,17 @@ wchar_t *uadv(wchar_t *s);
 wchar_t *ustrcpy(wchar_t *dest, wchar_t const *source);
 wchar_t *ustrncpy(wchar_t *dest, wchar_t const *source, int n);
 wchar_t utolower(wchar_t);
-int uisalpha(wchar_t);
+bool uisalpha(wchar_t);
 int ustrcmp(wchar_t *lhs, wchar_t *rhs);
 int ustricmp(wchar_t const *lhs, wchar_t const *rhs);
 int ustrnicmp(wchar_t const *lhs, wchar_t const *rhs, int maxlen);
 int utoi(wchar_t const *);
 double utof(wchar_t const *);
-int utob(wchar_t const *);
-int uisdigit(wchar_t);
+bool utob(wchar_t const *);
+bool uisdigit(wchar_t);
 wchar_t *ustrlow(wchar_t *s);
 wchar_t *ustrftime(const wchar_t *wfmt, const struct tm *timespec);
-int cvt_ok(int charset, const wchar_t *s);
+bool cvt_ok(int charset, const wchar_t *s);
 int charset_from_ustr(filepos *fpos, const wchar_t *name);
 
 /*
@@ -532,7 +536,7 @@ indexdata *make_index(void);
 void cleanup_index(indexdata *);
 /* index_merge takes responsibility for freeing arg 3 iff implicit; never
  * takes responsibility for arg 2 */
-void index_merge(indexdata *, int is_explicit, wchar_t *, word *, filepos *);
+void index_merge(indexdata *, bool is_explicit, wchar_t *, word *, filepos *);
 void build_index(indexdata *);
 void index_debug(indexdata *);
 indextag *index_findtag(indexdata *idx, wchar_t *name);
@@ -542,7 +546,7 @@ indextag *index_findtag(indexdata *idx, wchar_t *name);
  */
 numberstate *number_init(void);
 void number_cfg(numberstate *, paragraph *);
-word *number_mktext(numberstate *, paragraph *, wchar_t *, int *, int *);
+word *number_mktext(numberstate *, paragraph *, wchar_t *, int *, bool *);
 void number_free(numberstate *);
 
 /*

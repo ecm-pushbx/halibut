@@ -4546,7 +4546,7 @@ void init_std_fonts(void) {
     int i, j;
     ligature const *lig;
     kern_pair const *kern;
-    static int done = false;
+    static bool done = false;
 
     if (done) return;
     for (i = 0; i < (int)lenof(ps_std_fonts); i++) {

@@ -21,7 +21,7 @@ wchar_t *ustrdup(wchar_t const *s) {
 }
 
 static char *ustrtoa_internal(wchar_t const *s, char *outbuf, int size,
-			      int charset, int careful) {
+			      int charset, bool careful) {
     int len, ret;
     bool err;
     charset_state state = CHARSET_INIT_STATE;
@@ -88,7 +88,7 @@ wchar_t *ustrfroma(char const *s, wchar_t *outbuf, int size, int charset) {
     return outbuf;
 }
 
-char *utoa_internal_dup(wchar_t const *s, int charset, int *lenp, int careful)
+char *utoa_internal_dup(wchar_t const *s, int charset, int *lenp, bool careful)
 {
     char *outbuf;
     int outpos, outlen, len, ret;
@@ -284,7 +284,7 @@ wchar_t utolower(wchar_t c) {
 #endif
 }
 
-int uisalpha(wchar_t c) {
+bool uisalpha(wchar_t c) {
 #ifdef HAS_ISWALPHA
     return iswalpha(c);
 #else
@@ -353,14 +353,14 @@ double utof(wchar_t const *s)
     return ret;
 }
 
-int utob(wchar_t const *s) {
+bool utob(wchar_t const *s) {
     if (!ustricmp(s, L"yes") || !ustricmp(s, L"y") ||
 	!ustricmp(s, L"true") || !ustricmp(s, L"t"))
 	return true;
     return false;
 }
 
-int uisdigit(wchar_t c) {
+bool uisdigit(wchar_t c) {
     return c >= L'0' && c <= L'9';
 }
 
@@ -448,7 +448,7 @@ wchar_t *ustrftime(const wchar_t *wfmt, const struct tm *timespec)
  * Determine whether a Unicode string can be translated into a
  * given charset without any missing characters.
  */
-int cvt_ok(int charset, const wchar_t *s)
+bool cvt_ok(int charset, const wchar_t *s)
 {
     char buf[256];
     charset_state state = CHARSET_INIT_STATE;

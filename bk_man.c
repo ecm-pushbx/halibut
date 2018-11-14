@@ -9,7 +9,7 @@
 
 typedef struct {
     wchar_t *th;
-    int headnumbers;
+    bool headnumbers;
     int mindepth;
     char *filename;
     int charset;
@@ -17,11 +17,11 @@ typedef struct {
 } manconfig;
 
 static void man_text(FILE *, word *,
-		     int newline, int quote_props, manconfig *conf);
+		     bool newline, int quote_props, manconfig *conf);
 static void man_codepara(FILE *, word *, int charset);
-static int man_convert(wchar_t const *s, int maxlen,
-		       char **result, int quote_props,
-		       int charset, charset_state *state);
+static bool man_convert(wchar_t const *s, int maxlen,
+                        char **result, int quote_props,
+                        int charset, charset_state *state);
 
 /*
  * My TROFF reference is "NROFF/TROFF User's Manual", Joseph
@@ -102,7 +102,7 @@ static char const *troffchar(int unichar) {
  * Return true if we can represent the whole of the given string either
  * in the output charset or as named characters; false otherwise.
  */
-static int troff_ok(int charset, wchar_t *string) {
+static bool troff_ok(int charset, wchar_t *string) {
     wchar_t test[2];
     while (*string) {
 	test[0] = *string;
@@ -224,7 +224,7 @@ void man_backend(paragraph *sourceform, keywordlist *keywords,
     paragraph *p;
     FILE *fp;
     manconfig conf;
-    int had_described_thing;
+    bool had_described_thing;
 
     IGNORE(unused);
     IGNORE(keywords);
@@ -448,16 +448,15 @@ void man_backend(paragraph *sourceform, keywordlist *keywords,
  * 
  * This function also does escaping of groff special characters.
  */
-static int man_convert(wchar_t const *s, int maxlen,
-		       char **result, int quote_props,
-		       int charset, charset_state *state) {
+static bool man_convert(wchar_t const *s, int maxlen,
+                        char **result, int quote_props,
+                        int charset, charset_state *state) {
     charset_state internal_state = CHARSET_INIT_STATE;
     int slen;
     char *p = NULL, *q;
     int plen = 0, psize = 0;
     rdstringc out = {0, 0, NULL};
-    bool err;
-    int anyerr = 0;
+    bool err, anyerr = false;
 
     if (!state)
 	state = &internal_state;
@@ -628,7 +627,8 @@ static int man_rdaddwc(rdstringc *rs, word *text, word *end,
 
 	if (removeattr(text->type) == word_Normal) {
 	    charset_state s2 = *state;
-	    int len = ustrlen(text->text), hyphen = false;
+	    int len = ustrlen(text->text);
+            bool hyphen = false;
 
 	    if (text->breaks && len > 0 && text->text[len - 1] == '-') {
 		len--;
@@ -679,7 +679,7 @@ static int man_rdaddwc(rdstringc *rs, word *text, word *end,
     return quote_props;
 }
 
-static void man_text(FILE *fp, word *text, int newline,
+static void man_text(FILE *fp, word *text, bool newline,
 		     int quote_props, manconfig *conf) {
     rdstringc t = { 0, 0, NULL };
     charset_state state = CHARSET_INIT_STATE;

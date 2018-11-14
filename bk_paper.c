@@ -154,7 +154,7 @@ static int render_line(line_data *ldata, int left_x, int top_y,
 static void render_para(para_data *pdata, paper_conf *conf,
 			keywordlist *keywords, indexdata *idx,
 			paragraph *index_placeholder, page_data *index_page);
-static int string_width(font_data *font, wchar_t const *string, int *errs,
+static int string_width(font_data *font, wchar_t const *string, bool *errs,
 			unsigned flags);
 static int paper_width_simple(para_data *pdata, word *text, paper_conf *conf);
 static para_data *code_paragraph(int indent, word *words, paper_conf *conf);
@@ -174,15 +174,15 @@ static word *prepare_contents_title(word *first, wchar_t *separator,
 				    word *second);
 static void fold_into_page(page_data *dest, page_data *src, int right_shift);
 
-static int fonts_ok(wchar_t *string, ...)
+static bool fonts_ok(wchar_t *string, ...)
 {
     font_data *font;
     va_list ap;
-    int ret = true;
+    bool ret = true;
 
     va_start(ap, string);
     while ( (font = va_arg(ap, font_data *)) != NULL) {
-	int errs;
+	bool errs;
 	(void) string_width(font, string, &errs, 0);
 	if (errs) {
 	    ret = false;
@@ -524,14 +524,15 @@ void *paper_pre_backend(paragraph *sourceform, keywordlist *keywords,
 			indexdata *idx) {
     paragraph *p;
     document *doc;
-    int indent, used_contents;
+    int indent;
+    bool used_contents;
     para_data *pdata, *firstpara = NULL, *lastpara = NULL;
     para_data *firstcont, *lastcont;
     line_data *firstline, *lastline, *firstcontline, *lastcontline;
     page_data *pages;
     font_list *fontlist;
     paper_conf *conf, ourconf;
-    int has_index;
+    bool has_index;
     int pagenum;
     paragraph index_placeholder_para;
     page_data *first_index_page;
@@ -1567,14 +1568,14 @@ static int find_lig(font_data *font, int lindex, int rindex)
     return lig->lig;
 }
 
-static int string_width(font_data *font, wchar_t const *string, int *errs,
+static int string_width(font_data *font, wchar_t const *string, bool *errs,
 			unsigned flags)
 {
     int width = 0;
     int nindex, index, oindex, lindex;
 
     if (errs)
-	*errs = 0;
+	*errs = false;
 
     oindex = NOGLYPH;
     index = utoglyph(font->info, *string);
@@ -1583,7 +1584,7 @@ static int string_width(font_data *font, wchar_t const *string, int *errs,
 
 	if (index == NOGLYPH) {
 	    if (errs)
-		*errs = 1;
+		*errs = true;
 	} else {
 	    if (!(flags & RS_NOLIG) &&
 		(lindex = find_lig(font, index, nindex)) != NOGLYPH) {
@@ -1619,7 +1620,8 @@ static int paper_width_list(void *vctx, word *text, word *end, int *nspaces) {
 static int paper_width_internal(void *vctx, word *word, int *nspaces)
 {
     struct paper_width_ctx *ctx = (struct paper_width_ctx *)vctx;
-    int style, type, findex, width, errs;
+    int style, type, findex, width;
+    bool errs;
     wchar_t *str;
     unsigned flags = 0;
 
@@ -2103,7 +2105,8 @@ static int render_text(page_data *page, para_data *pdata, line_data *ldata,
 		       keywordlist *keywords, indexdata *idx, paper_conf *conf)
 {
     while (text && text != text_end) {
-	int style, type, findex, errs;
+	int style, type, findex;
+        bool errs;
 	wchar_t *str;
 	xref_dest dest;
 	unsigned flags = 0;

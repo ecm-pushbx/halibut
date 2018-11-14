@@ -332,14 +332,14 @@ struct deflate_compress_ctx {
     int outlen, outsize;
     unsigned long outbits;
     int noutbits;
-    int firstblock;
+    bool firstblock;
     unsigned long *syms;
     int symstart, nsyms;
     int type;
     unsigned long checksum;
     unsigned long datasize;
-    int lastblock;
-    int finished;
+    bool lastblock;
+    bool finished;
     unsigned char static_len1[288], static_len2[30];
     int static_code1[288], static_code2[30];
     struct huftrees sht;
@@ -435,7 +435,8 @@ static void outblock(deflate_compress_ctx *out,
     int treesyms[286 + 30];
     int codelen[19];
     int i, ntreesrc, ntreesyms;
-    int dynamic, blklen;
+    bool dynamic;
+    int blklen;
     struct huftrees dht;
     const struct huftrees *ht;
 #ifdef STATISTICS
@@ -1314,8 +1315,8 @@ struct deflate_decompress_ctx {
 	CRC1, CRC2, ILEN1, ILEN2,
 	FINALSPIN
     } state;
-    int sym, hlit, hdist, hclen, lenptr, lenextrabits, lenaddon, len,
-	lenrep, lastblock;
+    int sym, hlit, hdist, hclen, lenptr, lenextrabits, lenaddon, len, lenrep;
+    bool lastblock;
     int uncomplen;
     unsigned char lenlen[19];
     unsigned char lengths[286 + 32];
@@ -2030,9 +2031,10 @@ int main(int argc, char **argv)
     int ret, err, outlen;
     deflate_decompress_ctx *dhandle;
     deflate_compress_ctx *chandle;
-    int type = DEFLATE_TYPE_ZLIB, opts = true;
-    int compress = false, decompress = false;
-    int got_arg = false;
+    int type = DEFLATE_TYPE_ZLIB;
+    bool opts = true;
+    bool compress = false, decompress = false;
+    bool got_arg = false;
     char *filename = NULL;
     FILE *fp;
 

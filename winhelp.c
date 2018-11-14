@@ -1747,7 +1747,7 @@ void whlp_close(WHLP h, char *filename)
     int filecount, offset, index, filelen;
     struct file *file, *map, *md;
     context *ctx;
-    int has_index;
+    bool has_index;
 
     /*
      * Lay out the topic section.

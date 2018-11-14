@@ -277,7 +277,7 @@ struct line_data_Tag {
      * the heights of the three fonts in the pdata) because it's
      * easier than looking it up repeatedly during page breaking.
      */
-    int page_break;
+    bool page_break;
     int space_before;
     int space_after;
     int line_height;

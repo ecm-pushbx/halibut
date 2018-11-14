@@ -41,12 +41,12 @@ static const struct backend {
 int main(int argc, char **argv) {
     char **infiles;
     int nfiles;
-    int nogo;
-    int errs;
-    int reportcols;
-    int list_fonts;
+    bool nogo;
+    bool errs;
+    bool reportcols;
+    bool list_fonts;
     int input_charset;
-    int debug;
+    bool debug;
     int backendbits, prebackbits;
     int k, b;
     paragraph *cfg, *cfg_tail;
@@ -68,11 +68,12 @@ int main(int argc, char **argv) {
      */
     infiles = snewn(argc, char *);
     nfiles = 0;
-    nogo = errs = false;
-    reportcols = 0;
-    list_fonts = 0;
+    nogo = false;
+    errs = false;
+    reportcols = false;
+    list_fonts = false;
     input_charset = CS_ASCII;
-    debug = 0;
+    debug = false;
     backendbits = 0;
     cfg = cfg_tail = NULL;
 
@@ -154,7 +155,7 @@ int main(int argc, char **argv) {
 			} else if (!strcmp(opt, "-list-fonts")) {
 			    list_fonts = true;
 			} else if (!strcmp(opt, "-precise")) {
-			    reportcols = 1;
+			    reportcols = true;
 			} else {
 			    errs = true, err_nosuchopt(opt);
 			}
@@ -183,7 +184,7 @@ int main(int argc, char **argv) {
 			nogo = true;
 			break;
 		      case 'P':
-			reportcols = 1;
+			reportcols = true;
 			break;
 		      case 'd':
 			debug = true;

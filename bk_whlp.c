@@ -50,7 +50,7 @@ static void whlp_rdaddwc(rdstringc *rs, word *text, whlpconf *conf,
 static void whlp_rdadds(rdstringc *rs, const wchar_t *text, whlpconf *conf,
 			charset_state *state);
 static void whlp_mkparagraph(struct bk_whlp_state *state,
-			     int font, word *text, int subsidiary,
+			     int font, word *text, bool subsidiary,
 			     whlpconf *conf);
 static void whlp_navmenu(struct bk_whlp_state *state, paragraph *p,
 			 whlpconf *conf);
@@ -159,7 +159,7 @@ void whlp_backend(paragraph *sourceform, keywordlist *keywords,
     int i;
     int nesting;
     indexentry *ie;
-    int done_contents_topic = false;
+    bool done_contents_topic = false;
     whlpconf conf;
 
     IGNORE(unused);
@@ -699,7 +699,7 @@ static void whlp_navmenu(struct bk_whlp_state *state, paragraph *p,
 }
 
 static void whlp_mkparagraph(struct bk_whlp_state *state,
-			     int font, word *text, int subsidiary,
+			     int font, word *text, bool subsidiary,
 			     whlpconf *conf) {
     keyword *kwl;
     int deffont = font;

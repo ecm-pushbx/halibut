@@ -39,7 +39,7 @@ char *afm_read_line(input *in) {
     return line;
 }
 
-static int afm_require_key(char *line, char const *expected, input *in) {
+static bool afm_require_key(char *line, char const *expected, input *in) {
     char *key = strtok(line, " \t");
 
     if (strcmp(key, expected) == 0)

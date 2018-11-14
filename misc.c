@@ -251,7 +251,7 @@ void mark_attr_ends(word *words)
 
     wp = NULL;
     for (w = words; w; w = w->next) {
-	int both;
+	bool both;
 	if (!isvis(w->type))
 	    /* Invisible elements should not affect this calculation */
 	    continue;

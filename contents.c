@@ -11,7 +11,7 @@
 struct numberstate_Tag {
     int chapternum;
     int appendixnum;
-    int ischapter;
+    bool ischapter;
     int *sectionlevels;
     paragraph **currentsects;
     paragraph *lastsect;
@@ -28,7 +28,7 @@ numberstate *number_init(void) {
     numberstate *ret = snew(numberstate);
     ret->chapternum = 0;
     ret->appendixnum = -1;
-    ret->ischapter = 1;
+    ret->ischapter = true;
     ret->oklevel = -1;		       /* not even in a chapter yet */
     ret->maxsectlevel = 32;
     ret->sectionlevels = snewn(ret->maxsectlevel, int);
@@ -129,7 +129,7 @@ void number_cfg(numberstate *state, paragraph *source) {
 }
 
 word *number_mktext(numberstate *state, paragraph *p, wchar_t *category,
-		    int *prev, int *errflag) {
+		    int *prev, bool *errflag) {
     word *ret = NULL;
     word **ret2 = &ret;
     word **pret = &ret;
@@ -150,7 +150,7 @@ word *number_mktext(numberstate *state, paragraph *p, wchar_t *category,
 	dospace(&pret);
 	ret2 = pret;
 	donumber(&pret, state->chapternum);
-	state->ischapter = 1;
+	state->ischapter = true;
 	state->oklevel = 0;
 	level = -1;
 	break;
@@ -194,7 +194,7 @@ word *number_mktext(numberstate *state, paragraph *p, wchar_t *category,
 	dospace(&pret);
 	ret2 = pret;
 	doanumber(&pret, state->appendixnum);
-	state->ischapter = 0;
+	state->ischapter = false;
 	state->oklevel = 0;
 	level = -1;
 	break;

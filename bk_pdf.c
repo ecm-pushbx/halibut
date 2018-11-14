@@ -35,13 +35,13 @@ static void pdf_string_len(void (*add)(object *, char const *),
 static void objref(object *o, object *dest);
 static void objdest(object *o, page_data *p);
 
-static int is_std_font(char const *name);
+static bool is_std_font(char const *name);
 
 static void make_pages_node(object *node, object *parent, page_data *first,
 			    page_data *last, object *resources,
 			    object *mediabox);
 static int make_outline(object *parent, outline_element *start, int n,
-			int open);
+			bool open);
 static int pdf_versionid(FILE *fp, word *words);
 
 void pdf_backend(paragraph *sourceform, keywordlist *keywords,
@@ -784,7 +784,7 @@ static char const * const stdfonts[] = {
     "Symbol", "ZapfDingbats"
 };
 
-static int is_std_font(char const *name) {
+static bool is_std_font(char const *name) {
     unsigned i;
     for (i = 0; i < lenof(stdfonts); i++)
 	if (strcmp(name, stdfonts[i]) == 0)
@@ -913,7 +913,7 @@ char *pdf_outline_convert(wchar_t *s, int *len) {
 }
 
 static int make_outline(object *parent, outline_element *items, int n,
-			int open)
+			bool open)
 {
     int level, totalcount = 0;
     outline_element *itemp;

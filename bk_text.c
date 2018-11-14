@@ -10,7 +10,7 @@
 typedef enum { LEFT, LEFTPLUS, CENTRE } alignment;
 typedef struct {
     alignment align;
-    int number_at_all, just_numbers;
+    bool number_at_all, just_numbers;
     wchar_t *underline;
     wchar_t *number_suffix;
 } alignstruct;
@@ -21,8 +21,8 @@ typedef struct {
     int width;
     alignstruct atitle, achapter, *asect;
     int nasect;
-    int include_version_id;
-    int indent_preambles;
+    bool include_version_id;
+    bool indent_preambles;
     int charset;
     word bullet;
     wchar_t *lquote, *rquote, *rule;

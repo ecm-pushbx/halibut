@@ -452,8 +452,8 @@ struct sfnt_Tag {
     unsigned minmem, maxmem;
 };
 
-static int sfnt_findtable(sfnt *sf, unsigned tag,
-			  void **startp, void **endp) {
+static bool sfnt_findtable(sfnt *sf, unsigned tag,
+                           void **startp, void **endp) {
     size_t i;
 
     for (i = 0; i < sf->osd.numTables; i++) {

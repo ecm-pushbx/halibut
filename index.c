@@ -58,7 +58,7 @@ indextag *index_findtag(indexdata *idx, wchar_t *name) {
  * Guarantee on calling sequence: all implicit merges are given
  * before the explicit ones.
  */
-void index_merge(indexdata *idx, int is_explicit, wchar_t *tags, word *text,
+void index_merge(indexdata *idx, bool is_explicit, wchar_t *tags, word *text,
 		 filepos *fpos) {
     indextag *t, *existing;
 
@@ -214,7 +214,7 @@ void cleanup_index(indexdata *i) {
 }
 
 static void dbg_prtwordlist(int level, word *w);
-static void dbg_prtmerge(int is_explicit, wchar_t *tag, word *text);
+static void dbg_prtmerge(bool is_explicit, wchar_t *tag, word *text);
 
 void index_debug(indexdata *i) {
     indextag *t;
@@ -240,7 +240,7 @@ void index_debug(indexdata *i) {
     }
 }
 
-static void dbg_prtmerge(int is_explicit, wchar_t *tag, word *text) {
+static void dbg_prtmerge(bool is_explicit, wchar_t *tag, word *text) {
     printf("\\IM: %splicit: \"", is_explicit ? "ex" : "im");
     for (; *tag; tag++)
 	putchar(*tag);
