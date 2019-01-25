@@ -1853,7 +1853,7 @@ sed -n '/<td>\.notdef/,/<\/table>/s/^.*<td>\([^0-9].*\)<\/td>$/\1/p' |
 perl -e '
 open G, "glyphnames.txt" or die;
 chomp(@g = <G>); %g = map(($_, $i++), @g);
-while(<>){chomp;print"$g{$_}, "}
+while(<<>>){chomp;print"$g{$_}, "}
 print "NOGLYPH\n";' | fold -sw68 | sed 's/^/    /'
 
 */

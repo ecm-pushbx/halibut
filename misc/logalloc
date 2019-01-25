@@ -15,7 +15,7 @@
 
 $errors=0;
 
-while (<>) {
+while (<<>>) {
   $in=$out="";
   ($file, $line, $call, $in, $out)=($1,$2,$3,"",$4)
       if /^(\S+) (\S+) (malloc|strdup)\(\S+\) returns (\S+)$/;
