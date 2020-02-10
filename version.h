@@ -8,4 +8,6 @@
  * default stuff used for local development runs of 'make'.
  */
 
+#ifndef VERSION
 #define VERSION "unidentified version"
+#endif
