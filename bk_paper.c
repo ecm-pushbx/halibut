@@ -174,6 +174,8 @@ static word *prepare_contents_title(word *first, wchar_t *separator,
 				    word *second);
 static void fold_into_page(page_data *dest, page_data *src, int right_shift);
 
+font_info *all_fonts;
+
 static bool fonts_ok(wchar_t *string, ...)
 {
     font_data *font;

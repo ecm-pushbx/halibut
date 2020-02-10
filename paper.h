@@ -78,7 +78,7 @@ struct ligature_Tag {
  * metrics are read in.
  */
 
-font_info *all_fonts;
+extern font_info *all_fonts;
 
 struct font_info_Tag {
     font_info *next;
