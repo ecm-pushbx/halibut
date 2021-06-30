@@ -205,6 +205,9 @@ enum {
 /*
  * error.c
  */
+struct errorstate_Tag {
+    bool fatal;
+};
 /* out of memory */
 void fatalerr_nomemory(void) NORETURN;
 /* option `-%s' requires an argument */

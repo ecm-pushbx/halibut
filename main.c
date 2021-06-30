@@ -43,7 +43,6 @@ int main(int argc, char **argv) {
     char **infiles;
     int nfiles;
     bool nogo;
-    bool errs;
     bool reportcols;
     bool list_fonts;
     int input_charset;
@@ -52,7 +51,7 @@ int main(int argc, char **argv) {
     int k, b;
     paragraph *cfg, *cfg_tail;
     void *pre_backend_data[16];
-    errorstate *es = NULL;            /* FIXME */
+    errorstate es[1];
 
     /*
      * Use the specified locale everywhere. It'll be used for
@@ -71,13 +70,13 @@ int main(int argc, char **argv) {
     infiles = snewn(argc, char *);
     nfiles = 0;
     nogo = false;
-    errs = false;
     reportcols = false;
     list_fonts = false;
     input_charset = CS_ASCII;
     debug = false;
     backendbits = 0;
     cfg = cfg_tail = NULL;
+    es->fatal = false;
 
     if (argc == 1) {
 	usage();
@@ -132,11 +131,11 @@ int main(int argc, char **argv) {
 			    /* do nothing */;
 			} else if (!strcmp(opt, "-input-charset")) {
 			    if (!val) {
-				errs = true, err_optnoarg(es, opt);
+				err_optnoarg(es, opt);
 			    } else {
 				int charset = charset_from_localenc(val);
 				if (charset == CS_NONE) {
-				    errs = true, err_cmdcharset(es, val);
+				    err_cmdcharset(es, val);
 				} else {
 				    input_charset = charset;
 				}
@@ -159,7 +158,7 @@ int main(int argc, char **argv) {
 			} else if (!strcmp(opt, "-precise")) {
 			    reportcols = true;
 			} else {
-			    errs = true, err_nosuchopt(es, opt);
+			    err_nosuchopt(es, opt);
 			}
 		    }
 		    p = NULL;
@@ -204,7 +203,7 @@ int main(int argc, char **argv) {
 			char opt[2];
 			opt[0] = c;
 			opt[1] = '\0';
-			errs = true, err_optnoarg(es, opt);
+			err_optnoarg(es, opt);
 		    }
 		    /*
 		     * Now c is the option and p is the parameter.
@@ -260,7 +259,7 @@ int main(int argc, char **argv) {
 			char opt[2];
 			opt[0] = c;
 			opt[1] = '\0';
-			errs = true, err_nosuchopt(es, opt);
+			err_nosuchopt(es, opt);
 		    }
 		}
 	    }
@@ -275,7 +274,7 @@ int main(int argc, char **argv) {
 	}
     }
 
-    if (errs)
+    if (es->fatal)
 	exit(EXIT_FAILURE);
     if (nogo)
 	exit(EXIT_SUCCESS);
@@ -313,8 +312,9 @@ int main(int argc, char **argv) {
 	    listfonts();
 	    exit(EXIT_SUCCESS);
 	}
-	if (!sourceform)
+	if (es->fatal)
 	    exit(EXIT_FAILURE);
+        assert(sourceform);
 
 	/*
 	 * Append the config directives acquired from the command
@@ -407,6 +407,9 @@ int main(int argc, char **argv) {
 	free_keywords(keywords);
 	cleanup_index(idx);
     }
+
+    if (es->fatal)
+        exit(EXIT_FAILURE);
 
     return 0;
 }
