@@ -42,7 +42,7 @@ typedef struct pfstate_Tag {
     size_t offset;
 } pfstate;
 
-static void pf_identify(t1_font *tf);
+static void pf_identify(t1_font *tf, errorstate *);
 
 static t1_data *load_pfb_file(FILE *fp, filepos *pos) {
     t1_data *head = NULL, *tail = NULL;
@@ -102,7 +102,7 @@ void read_pfa_file(input *in) {
     tf->pos = in->pos;
     tf->length1 = tf->length2 = 0;
     fclose(in->currfp);
-    pf_identify(tf);
+    pf_identify(tf, in->es);
 }
 
 void read_pfb_file(input *in) {
@@ -112,7 +112,7 @@ void read_pfb_file(input *in) {
     tf->pos = in->pos;
     tf->length1 = tf->length2 = 0;
     fclose(in->currfp);
-    pf_identify(tf);
+    pf_identify(tf, in->es);
 }
 static char *pf_read_token(pfstate *);
 
@@ -162,7 +162,7 @@ static size_t pf_tell(pfstate *pf) {
     return o + pf->offset;
 }
 
-static void pf_identify(t1_font *tf) {
+static void pf_identify(t1_font *tf, errorstate *es) {
     rdstringc rsc = { 0, 0, NULL };
     char *p;
     size_t len;
@@ -177,7 +177,7 @@ static void pf_identify(t1_font *tf) {
 	c = pf_getc(pf);
 	if (c == EOF) {
 	    sfree(rsc.text);
-	    err_pfeof(&tf->pos);
+	    err_pfeof(es, &tf->pos);
 	    return;
 	}
 	rdaddc(&rsc, c);
@@ -185,7 +185,7 @@ static void pf_identify(t1_font *tf) {
     p = rsc.text;
     if ((p = strchr(p, ':')) == NULL) {
 	sfree(rsc.text);
-	err_pfhead(&tf->pos);
+	err_pfhead(es, &tf->pos);
 	return;
     }
     p++;
@@ -204,7 +204,7 @@ static void pf_identify(t1_font *tf) {
 	    return;
 	}
     }
-    err_pfnoafm(&tf->pos, fontname);
+    err_pfnoafm(es, &tf->pos, fontname);
     sfree(fontname);
 }
 
@@ -247,25 +247,25 @@ static size_t pf_findtoken(t1_font *tf, size_t off, char const *needle) {
     }
 }
 
-static size_t pf_length1(t1_font *tf) {
+static size_t pf_length1(t1_font *tf, errorstate *es) {
     size_t ret;
 
     ret = pf_findtoken(tf, 0, "eexec");
     if (ret == (size_t)-1) {
-	err_pfeof(&tf->pos);
+	err_pfeof(es, &tf->pos);
 	return 0;
     }
     return ret;
 }
 
-static size_t pf_length2(t1_font *tf) {
+static size_t pf_length2(t1_font *tf, errorstate *es) {
     size_t ret;
 
     if (tf->length1 == 0)
-	tf->length1 = pf_length1(tf);
+	tf->length1 = pf_length1(tf, es);
     ret = pf_findtoken(tf, tf->length1, "cleartomark");
     if (ret == (size_t)-1) {
-	err_pfeof(&tf->pos);
+	err_pfeof(es, &tf->pos);
 	return 0;
     }
     return ret - 12 - tf->length1; /* backspace over "cleartomark\n" */
@@ -363,22 +363,22 @@ static void pf_getbinary(t1_font *tf, size_t off, size_t len,
 /*
  * Return the initial, unencrypted, part of a font.
  */
-void pf_part1(font_info *fi, char **bufp, size_t *lenp) {
+void pf_part1(font_info *fi, char **bufp, size_t *lenp, errorstate *es) {
     t1_font *tf = fi->fontfile;
 
     if (tf->length1 == 0)
-	tf->length1 = pf_length1(tf);
+	tf->length1 = pf_length1(tf, es);
     pf_getascii(tf, 0, tf->length1, bufp, lenp);
 }
 
 /*
  * Return the middle, encrypted, part of a font.
  */
-void pf_part2(font_info *fi, char **bufp, size_t *lenp) {
+void pf_part2(font_info *fi, char **bufp, size_t *lenp, errorstate *es) {
     t1_font *tf = fi->fontfile;
 
     if (tf->length2 == 0)
-	tf->length2 = pf_length2(tf);
+	tf->length2 = pf_length2(tf, es);
     pf_getbinary(tf, tf->length1, tf->length2, bufp, lenp);
     if (*lenp >= 256)
 	*lenp -= 256;

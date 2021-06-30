@@ -38,6 +38,7 @@ typedef struct indexdata_Tag indexdata;
 typedef struct indextag_Tag indextag;
 typedef struct indexentry_Tag indexentry;
 typedef struct macrostack_Tag macrostack;
+typedef struct errorstate_Tag errorstate;
 
 /*
  * Data structure to hold a file name and index, a line and a
@@ -71,6 +72,7 @@ struct input_Tag {
     wchar_t wc[16];		       /* wide chars from input conversion */
     int nwc, wcpos;		       /* size of, and position in, wc[] */
     char *pushback_chars;	       /* used to save input-encoding data */
+    errorstate *es;
 };
 
 /*
@@ -206,122 +208,128 @@ enum {
 /* out of memory */
 void fatalerr_nomemory(void) NORETURN;
 /* option `-%s' requires an argument */
-void err_optnoarg(const char *sp);
+void err_optnoarg(errorstate *es, const char *sp);
 /* unrecognised option `-%s' */
-void err_nosuchopt(const char *sp);
+void err_nosuchopt(errorstate *es, const char *sp);
 /* unrecognised charset %s (cmdline) */
-void err_cmdcharset(const char *sp);
+void err_cmdcharset(errorstate *es, const char *sp);
 /* futile option `-%s'%s */
-void err_futileopt(const char *sp, const char *sp2);
+void err_futileopt(errorstate *es, const char *sp, const char *sp2);
 /* no input files */
-void err_noinput(void);
+void err_noinput(errorstate *es);
 /* unable to open input file `%s' */
-void err_cantopen(const char *sp);
+void err_cantopen(errorstate *es, const char *sp);
 /* no data in input files */
-void err_nodata(void);
+void err_nodata(errorstate *es);
 /* line in codepara didn't begin `\c' */
-void err_brokencodepara(const filepos *fpos);
+void err_brokencodepara(errorstate *es, const filepos *fpos);
 /* expected `}' after keyword */
-void err_kwunclosed(const filepos *fpos);
+void err_kwunclosed(errorstate *es, const filepos *fpos);
 /* paragraph type expects no keyword */
-void err_kwexpected(const filepos *fpos);
+void err_kwexpected(errorstate *es, const filepos *fpos);
 /* paragraph type expects a keyword */
-void err_kwillegal(const filepos *fpos);
+void err_kwillegal(errorstate *es, const filepos *fpos);
 /* paragraph type expects only 1 */
-void err_kwtoomany(const filepos *fpos);
+void err_kwtoomany(errorstate *es, const filepos *fpos);
 /* paragraph type expects only kws! */
-void err_bodyillegal(const filepos *fpos);
+void err_bodyillegal(errorstate *es, const filepos *fpos);
 /* invalid command at start of para */
-void err_badparatype(const wchar_t *wsp, const filepos *fpos);
+void err_badparatype(errorstate *es, const wchar_t *wsp, const filepos *fpos);
 /* invalid command in mid-para */
-void err_badmidcmd(const wchar_t *wsp, const filepos *fpos);
+void err_badmidcmd(errorstate *es, const wchar_t *wsp, const filepos *fpos);
 /* unexpected brace */
-void err_unexbrace(const filepos *fpos);
+void err_unexbrace(errorstate *es, const filepos *fpos);
 /* expected `{' after command */
-void err_explbr(const filepos *fpos);
+void err_explbr(errorstate *es, const filepos *fpos);
 /* EOF inside braced comment */
-void err_commenteof(const filepos *fpos);
+void err_commenteof(errorstate *es, const filepos *fpos);
 /* expected `}' after cross-ref */
-void err_kwexprbr(const filepos *fpos);
+void err_kwexprbr(errorstate *es, const filepos *fpos);
 /* \q within \c is not supported */
-void err_codequote(const filepos *fpos);
+void err_codequote(errorstate *es, const filepos *fpos);
 /* unclosed braces at end of para */
-void err_missingrbrace(const filepos *fpos);
+void err_missingrbrace(errorstate *es, const filepos *fpos);
 /* unclosed braces at end of file */
-void err_missingrbrace2(const filepos *fpos);
+void err_missingrbrace2(errorstate *es, const filepos *fpos);
 /* unable to nest text styles */
-void err_nestedstyles(const filepos *fpos);
+void err_nestedstyles(errorstate *es, const filepos *fpos);
 /* unable to nest `\i' thingys */
-void err_nestedindex(const filepos *fpos);
+void err_nestedindex(errorstate *es, const filepos *fpos);
 /* two \i differing only in case */
-void err_indexcase(const filepos *fpos, const wchar_t *wsp,
+void err_indexcase(errorstate *es, const filepos *fpos, const wchar_t *wsp,
                    const filepos *fpos2, const wchar_t *wsp2);
 /* unresolved cross-reference */
-void err_nosuchkw(const filepos *fpos, const wchar_t *wsp);
+void err_nosuchkw(errorstate *es, const filepos *fpos, const wchar_t *wsp);
 /* multiple \BRs on same keyword */
-void err_multiBR(const filepos *fpos, const wchar_t *wsp);
+void err_multiBR(errorstate *es, const filepos *fpos, const wchar_t *wsp);
 /* \IM on unknown index tag (warning) */
-void err_nosuchidxtag(const filepos *fpos, const wchar_t *wsp);
+void err_nosuchidxtag(errorstate *es, const filepos *fpos,
+                      const wchar_t *wsp);
 /* can't open output file for write */
-void err_cantopenw(const char *sp);
+void err_cantopenw(errorstate *es, const char *sp);
 /* this macro already exists */
-void err_macroexists(const filepos *fpos, const wchar_t *wsp);
+void err_macroexists(errorstate *es, const filepos *fpos, const wchar_t *wsp);
 /* jump a heading level, eg \C -> \S */
-void err_sectjump(const filepos *fpos);
+void err_sectjump(errorstate *es, const filepos *fpos);
 /* WinHelp context ID hash clash */
-void err_winhelp_ctxclash(const filepos *fpos, const char *sp, const char *sp2);
+void err_winhelp_ctxclash(errorstate *es, const filepos *fpos,
+                          const char *sp, const char *sp2);
 /* keyword clash in sections */
-void err_multikw(const filepos *fpos, const filepos *fpos2, const wchar_t *wsp);
+void err_multikw(errorstate *es, const filepos *fpos, const filepos *fpos2,
+                 const wchar_t *wsp);
 /* \lcont not after a list item */
-void err_misplacedlcont(const filepos *fpos);
+void err_misplacedlcont(errorstate *es, const filepos *fpos);
 /* section marker appeared in block */
-void err_sectmarkerinblock(const filepos *fpos, const char *sp);
+void err_sectmarkerinblock(errorstate *es, const filepos *fpos,
+                           const char *sp);
 /* \cfg{%s} insufficient args (<%d) */
-void err_cfginsufarg(const filepos *fpos, const char *sp, int i);
+void err_cfginsufarg(errorstate *es, const filepos *fpos, const char *sp,
+                     int i);
 /* colon/comma in node name in info */
-void err_infonodechar(const filepos *fpos, char c) /* fpos might be NULL */;
+void err_infonodechar(errorstate *es, const filepos *fpos, char c)
+    /* fpos might be NULL */;
 /* \c line too long in text backend */
-void err_text_codeline(const filepos *fpos, int i, int j);
+void err_text_codeline(errorstate *es, const filepos *fpos, int i, int j);
 /* unrecognised HTML version keyword */
-void err_htmlver(const filepos *fpos, const wchar_t *wsp);
+void err_htmlver(errorstate *es, const filepos *fpos, const wchar_t *wsp);
 /* unrecognised character set name */
-void err_charset(const filepos *fpos, const wchar_t *wsp);
+void err_charset(errorstate *es, const filepos *fpos, const wchar_t *wsp);
 /* unrecognised font name */
-void err_nofont(const filepos *fpos, const wchar_t *wsp);
+void err_nofont(errorstate *es, const filepos *fpos, const wchar_t *wsp);
 /* eof in AFM file */
-void err_afmeof(const filepos *fpos);
+void err_afmeof(errorstate *es, const filepos *fpos);
 /* missing expected keyword in AFM */
-void err_afmkey(const filepos *fpos, const char *sp);
+void err_afmkey(errorstate *es, const filepos *fpos, const char *sp);
 /* unsupported AFM version */
-void err_afmvers(const filepos *fpos);
+void err_afmvers(errorstate *es, const filepos *fpos);
 /* missing value(s) for AFM key */
-void err_afmval(const filepos *fpos, const char *sp, int i);
+void err_afmval(errorstate *es, const filepos *fpos, const char *sp, int i);
 /* eof in Type 1 font file */
-void err_pfeof(const filepos *fpos);
+void err_pfeof(errorstate *es, const filepos *fpos);
 /* bad Type 1 header line */
-void err_pfhead(const filepos *fpos);
+void err_pfhead(errorstate *es, const filepos *fpos);
 /* otherwise invalide Type 1 font */
-void err_pfbad(const filepos *fpos);
+void err_pfbad(errorstate *es, const filepos *fpos);
 /* Type 1 font but no AFM */
-void err_pfnoafm(const filepos *fpos, const char *sp);
+void err_pfnoafm(errorstate *es, const filepos *fpos, const char *sp);
 /* need both or neither of hhp+chm */
-void err_chmnames(void);
+void err_chmnames(errorstate *es);
 /* required sfnt table missing */
-void err_sfntnotable(const filepos *fpos, const char *sp);
+void err_sfntnotable(errorstate *es, const filepos *fpos, const char *sp);
 /* sfnt has no PostScript name */
-void err_sfntnopsname(const filepos *fpos);
+void err_sfntnopsname(errorstate *es, const filepos *fpos);
 /* sfnt table not valid */
-void err_sfntbadtable(const filepos *fpos, const char *sp);
+void err_sfntbadtable(errorstate *es, const filepos *fpos, const char *sp);
 /* sfnt has no UCS-2 cmap */
-void err_sfntnounicmap(const filepos *fpos);
+void err_sfntnounicmap(errorstate *es, const filepos *fpos);
 /* sfnt table version unknown */
-void err_sfnttablevers(const filepos *fpos, const char *sp);
+void err_sfnttablevers(errorstate *es, const filepos *fpos, const char *sp);
 /* sfnt has bad header */
-void err_sfntbadhdr(const filepos *fpos);
+void err_sfntbadhdr(errorstate *es, const filepos *fpos);
 /* sfnt cmap references bad glyph */
-void err_sfntbadglyph(const filepos *fpos, unsigned wc);
+void err_sfntbadglyph(errorstate *es, const filepos *fpos, unsigned wc);
 /* CHM internal file names can't start with # or $ */
-void err_chm_badname(const filepos *fpos, const char *sp);
+void err_chm_badname(errorstate *es, const filepos *fpos, const char *sp);
 
 /*
  * malloc.c
@@ -378,7 +386,7 @@ bool uisdigit(wchar_t);
 wchar_t *ustrlow(wchar_t *s);
 wchar_t *ustrftime(const wchar_t *wfmt, const struct tm *timespec);
 bool cvt_ok(int charset, const wchar_t *s);
-int charset_from_ustr(filepos *fpos, const wchar_t *name);
+int charset_from_ustr(filepos *fpos, const wchar_t *name, errorstate *);
 
 /*
  * wcwidth.c
@@ -493,9 +501,9 @@ struct keyword_Tag {
     paragraph *para;		       /* the paragraph referenced */
 };
 keyword *kw_lookup(keywordlist *, wchar_t *);
-keywordlist *get_keywords(paragraph *);
+keywordlist *get_keywords(paragraph *, errorstate *);
 void free_keywords(keywordlist *);
-void subst_keywords(paragraph *, keywordlist *);
+void subst_keywords(paragraph *, keywordlist *, errorstate *);
 
 /*
  * index.c
@@ -536,7 +544,8 @@ indexdata *make_index(void);
 void cleanup_index(indexdata *);
 /* index_merge takes responsibility for freeing arg 3 iff implicit; never
  * takes responsibility for arg 2 */
-void index_merge(indexdata *, bool is_explicit, wchar_t *, word *, filepos *);
+void index_merge(indexdata *, bool is_explicit, wchar_t *, word *, filepos *,
+                 errorstate *es);
 void build_index(indexdata *);
 void index_debug(indexdata *);
 indextag *index_findtag(indexdata *idx, wchar_t *name);
@@ -546,62 +555,72 @@ indextag *index_findtag(indexdata *idx, wchar_t *name);
  */
 numberstate *number_init(void);
 void number_cfg(numberstate *, paragraph *);
-word *number_mktext(numberstate *, paragraph *, wchar_t *, int *, bool *);
+word *number_mktext(numberstate *, paragraph *, wchar_t *, int *, bool *,
+                    errorstate *es);
 void number_free(numberstate *);
 
 /*
  * biblio.c
  */
-void gen_citations(paragraph *, keywordlist *);
+void gen_citations(paragraph *, keywordlist *, errorstate *);
 
 /*
  * bk_text.c
  */
-void text_backend(paragraph *, keywordlist *, indexdata *, void *);
+void text_backend(paragraph *, keywordlist *, indexdata *, void *,
+                  errorstate *);
 paragraph *text_config_filename(char *filename);
 
 /*
  * bk_html.c
  */
-void html_backend(paragraph *, keywordlist *, indexdata *, void *);
-void chm_backend(paragraph *, keywordlist *, indexdata *, void *);
+void html_backend(paragraph *, keywordlist *, indexdata *, void *,
+                  errorstate *);
+void chm_backend(paragraph *, keywordlist *, indexdata *, void *,
+                 errorstate *);
 paragraph *html_config_filename(char *filename);
 paragraph *chm_config_filename(char *filename);
 
 /*
  * bk_whlp.c
  */
-void whlp_backend(paragraph *, keywordlist *, indexdata *, void *);
+void whlp_backend(paragraph *, keywordlist *, indexdata *, void *,
+                  errorstate *);
 paragraph *whlp_config_filename(char *filename);
 
 /*
  * bk_man.c
  */
-void man_backend(paragraph *, keywordlist *, indexdata *, void *);
+void man_backend(paragraph *, keywordlist *, indexdata *, void *,
+                 errorstate *);
 paragraph *man_config_filename(char *filename);
 
 /*
  * bk_info.c
  */
-void info_backend(paragraph *, keywordlist *, indexdata *, void *);
+void info_backend(paragraph *, keywordlist *, indexdata *, void *,
+                  errorstate *);
 paragraph *info_config_filename(char *filename);
 
 /*
  * bk_paper.c
  */
-void *paper_pre_backend(paragraph *, keywordlist *, indexdata *);
+void *paper_pre_backend(paragraph *, keywordlist *, indexdata *,
+                        errorstate *);
 void listfonts(void);
 
 /*
  * bk_ps.c
  */
-void ps_backend(paragraph *, keywordlist *, indexdata *, void *);
+void ps_backend(paragraph *, keywordlist *, indexdata *, void *,
+                errorstate *);
 paragraph *ps_config_filename(char *filename);
 
 /*
  * bk_pdf.c
  */
-void pdf_backend(paragraph *, keywordlist *, indexdata *, void *);
+void pdf_backend(paragraph *, keywordlist *, indexdata *, void *,
+                 errorstate *);
 paragraph *pdf_config_filename(char *filename);
 
 #endif

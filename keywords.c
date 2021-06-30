@@ -31,7 +31,7 @@ keyword *kw_lookup(keywordlist *kl, wchar_t *str) {
  * collation, last at the top (so that we can Heapsort them when we
  * finish).
  */
-keywordlist *get_keywords(paragraph *source) {
+keywordlist *get_keywords(paragraph *source, errorstate *es) {
     bool errors = false;
     keywordlist *kl = snew(keywordlist);
     numberstate *n = number_init();
@@ -62,7 +62,7 @@ keywordlist *get_keywords(paragraph *source) {
 	 * This also sets up the `parent', `child' and `sibling'
 	 * links.
 	 */
-	source->kwtext = number_mktext(n, source, q, &prevpara, &errors);
+	source->kwtext = number_mktext(n, source, q, &prevpara, &errors, es);
 
 	if (p && *p) {
 	    if (source->kwtext || source->type == para_Biblio) {
@@ -74,7 +74,7 @@ keywordlist *get_keywords(paragraph *source) {
 		kw->para = source;
 		ret = add234(kl->keys, kw);
 		if (ret != kw) {
-		    err_multikw(&source->fpos, &ret->para->fpos, p);
+		    err_multikw(es, &source->fpos, &ret->para->fpos, p);
 		    sfree(kw);
 		    /* FIXME: what happens to kw->text? Does it leak? */
 		}
@@ -113,7 +113,7 @@ void free_keywords(keywordlist *kl) {
     sfree(kl);
 }
 
-void subst_keywords(paragraph *source, keywordlist *kl) {
+void subst_keywords(paragraph *source, keywordlist *kl, errorstate *es) {
     for (; source; source = source->next) {
 	word *ptr;
 	for (ptr = source->words; ptr; ptr = ptr->next) {
@@ -124,7 +124,7 @@ void subst_keywords(paragraph *source, keywordlist *kl) {
 
 		kw = kw_lookup(kl, ptr->text);
 		if (!kw) {
-		    err_nosuchkw(&ptr->fpos, ptr->text);
+		    err_nosuchkw(es, &ptr->fpos, ptr->text);
 		    subst = NULL;
 		} else
 		    subst = dup_word_list(kw->text);

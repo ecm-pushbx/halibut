@@ -150,7 +150,7 @@ static whlpconf whlp_configure(paragraph *source) {
 }
 
 void whlp_backend(paragraph *sourceform, keywordlist *keywords,
-		  indexdata *idx, void *unused) {
+		  indexdata *idx, void *unused, errorstate *es) {
     WHLP h;
     char *cntname;
     paragraph *p, *lastsect;
@@ -223,7 +223,7 @@ void whlp_backend(paragraph *sourceform, keywordlist *keywords,
 
     state.cntfp = fopen(cntname, "wb");
     if (!state.cntfp) {
-	err_cantopenw(cntname);
+	err_cantopenw(es, cntname);
 	return;
     }
     state.cnt_last_level = -1; state.cnt_workaround = 0;
@@ -250,7 +250,7 @@ void whlp_backend(paragraph *sourceform, keywordlist *keywords,
 	    p->private_data = whlp_register_topic(h, rs.text, &errstr);
 	    if (!p->private_data) {
 		p->private_data = whlp_register_topic(h, NULL, NULL);
-		err_winhelp_ctxclash(&p->fpos, rs.text, errstr);
+		err_winhelp_ctxclash(es, &p->fpos, rs.text, errstr);
 	    }
 	    sfree(rs.text);
 	}

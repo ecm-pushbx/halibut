@@ -473,7 +473,7 @@ bool cvt_ok(int charset, const wchar_t *s)
  * rely on always getting a valid charset id back from this
  * function.
  */
-int charset_from_ustr(filepos *fpos, const wchar_t *name)
+int charset_from_ustr(filepos *fpos, const wchar_t *name, errorstate *es)
 {
     char *csname;
     int charset;
@@ -483,7 +483,7 @@ int charset_from_ustr(filepos *fpos, const wchar_t *name)
 
     if (charset == CS_NONE) {
 	charset = CS_ASCII;
-	err_charset(fpos, name);
+	err_charset(es, fpos, name);
     }
 
     sfree(csname);

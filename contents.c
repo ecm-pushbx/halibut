@@ -129,7 +129,7 @@ void number_cfg(numberstate *state, paragraph *source) {
 }
 
 word *number_mktext(numberstate *state, paragraph *p, wchar_t *category,
-		    int *prev, bool *errflag) {
+		    int *prev, bool *errflag, errorstate *es) {
     word *ret = NULL;
     word **ret2 = &ret;
     word **pret = &ret;
@@ -158,7 +158,7 @@ word *number_mktext(numberstate *state, paragraph *p, wchar_t *category,
       case para_Subsect:
 	level = (p->type == para_Heading ? 0 : p->aux);
 	if (level > state->oklevel) {
-	    err_sectjump(&p->fpos);
+	    err_sectjump(es, &p->fpos);
 	    *errflag = true;
 	    ret = NULL;
 	    break;

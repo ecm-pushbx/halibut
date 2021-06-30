@@ -13,7 +13,7 @@ static void dbg_prtwordlist(int level, word *w);
 static void dbg_prtkws(keywordlist *kws);
 
 static const struct pre_backend {
-    void *(*func)(paragraph *, keywordlist *, indexdata *);
+    void *(*func)(paragraph *, keywordlist *, indexdata *, errorstate *);
     int bitfield;
 } pre_backends[] = {
     {paper_pre_backend, 0x0001}
@@ -21,7 +21,8 @@ static const struct pre_backend {
 
 static const struct backend {
     char *name;
-    void (*func)(paragraph *, keywordlist *, indexdata *, void *);
+    void (*func)(paragraph *, keywordlist *, indexdata *, void *,
+                 errorstate *);
     paragraph *(*filename)(char *filename);
     int bitfield, prebackend_bitfield;
 } backends[] = {
@@ -51,6 +52,7 @@ int main(int argc, char **argv) {
     int k, b;
     paragraph *cfg, *cfg_tail;
     void *pre_backend_data[16];
+    errorstate *es = NULL;            /* FIXME */
 
     /*
      * Use the specified locale everywhere. It'll be used for
@@ -130,11 +132,11 @@ int main(int argc, char **argv) {
 			    /* do nothing */;
 			} else if (!strcmp(opt, "-input-charset")) {
 			    if (!val) {
-				errs = true, err_optnoarg(opt);
+				errs = true, err_optnoarg(es, opt);
 			    } else {
 				int charset = charset_from_localenc(val);
 				if (charset == CS_NONE) {
-				    errs = true, err_cmdcharset(val);
+				    errs = true, err_cmdcharset(es, val);
 				} else {
 				    input_charset = charset;
 				}
@@ -157,7 +159,7 @@ int main(int argc, char **argv) {
 			} else if (!strcmp(opt, "-precise")) {
 			    reportcols = true;
 			} else {
-			    errs = true, err_nosuchopt(opt);
+			    errs = true, err_nosuchopt(es, opt);
 			}
 		    }
 		    p = NULL;
@@ -202,7 +204,7 @@ int main(int argc, char **argv) {
 			char opt[2];
 			opt[0] = c;
 			opt[1] = '\0';
-			errs = true, err_optnoarg(opt);
+			errs = true, err_optnoarg(es, opt);
 		    }
 		    /*
 		     * Now c is the option and p is the parameter.
@@ -226,7 +228,7 @@ int main(int argc, char **argv) {
 				    *r = '\0';
 				    /* XXX ad-hoc diagnostic */
 				    if (!strcmp(s, "input-charset"))
-					err_futileopt("Cinput-charset",
+					err_futileopt(es, "Cinput-charset",
 					      "; use --input-charset");
 				    cmdline_cfg_add(para, s);
 				    r = s;
@@ -258,7 +260,7 @@ int main(int argc, char **argv) {
 			char opt[2];
 			opt[0] = c;
 			opt[1] = '\0';
-			errs = true, err_nosuchopt(opt);
+			errs = true, err_nosuchopt(es, opt);
 		    }
 		}
 	    }
@@ -282,7 +284,7 @@ int main(int argc, char **argv) {
      * Do the work.
      */
     if (nfiles == 0 && !list_fonts) {
-	err_noinput();
+	err_noinput(es);
 	usage();
 	exit(EXIT_FAILURE);
     }
@@ -302,6 +304,7 @@ int main(int argc, char **argv) {
 	in.reportcols = reportcols;
 	in.stack = NULL;
 	in.defcharset = input_charset;
+        in.es = es;
 
 	idx = make_index();
 
@@ -332,15 +335,15 @@ int main(int argc, char **argv) {
 
 	sfree(infiles);
 
-	keywords = get_keywords(sourceform);
+	keywords = get_keywords(sourceform, es);
 	if (!keywords)
 	    exit(EXIT_FAILURE);
-	gen_citations(sourceform, keywords);
-	subst_keywords(sourceform, keywords);
+	gen_citations(sourceform, keywords, es);
+	subst_keywords(sourceform, keywords, es);
 
 	for (p = sourceform; p; p = p->next)
 	    if (p->type == para_IM)
-		index_merge(idx, true, p->keyword, p->words, &p->fpos);
+		index_merge(idx, true, p->keyword, p->words, &p->fpos, es);
 
 	build_index(idx);
 
@@ -375,7 +378,7 @@ int main(int argc, char **argv) {
 	    if (prebackbits & pre_backends[k].bitfield) {
 		assert(k < (int)lenof(pre_backend_data));
 		pre_backend_data[k] =
-		    pre_backends[k].func(sourceform, keywords, idx);
+		    pre_backends[k].func(sourceform, keywords, idx, es);
 	    }
 
 	/*
@@ -396,7 +399,7 @@ int main(int argc, char **argv) {
 			    break;
 			}
 			    
-		    backends[k].func(sourceform, keywords, idx, pbd);
+		    backends[k].func(sourceform, keywords, idx, pbd, es);
 		}
 	    }
 

@@ -45,7 +45,7 @@ static int make_outline(object *parent, outline_element *start, int n,
 static int pdf_versionid(FILE *fp, word *words);
 
 void pdf_backend(paragraph *sourceform, keywordlist *keywords,
-		 indexdata *idx, void *vdoc) {
+		 indexdata *idx, void *vdoc, errorstate *es) {
     document *doc = (document *)vdoc;
     int font_index;
     font_encoding *fe;
@@ -369,12 +369,12 @@ void pdf_backend(paragraph *sourceform, keywordlist *keywords,
 		size_t len;
 		char *ffbuf;
 
-		pf_part1((font_info *)fi, &ffbuf, &len);
+		pf_part1((font_info *)fi, &ffbuf, &len, es);
 		objstream_len(fontfile, ffbuf, len);
 		sfree(ffbuf);
 		sprintf(buf, "<<\n/Length1 %lu\n", (unsigned long)len);
 		objtext(fontfile, buf);
-		pf_part2((font_info *)fi, &ffbuf, &len);
+		pf_part2((font_info *)fi, &ffbuf, &len, es);
 		objstream_len(fontfile, ffbuf, len);
 		sfree(ffbuf);
 		sprintf(buf, "/Length2 %lu\n", (unsigned long)len);
@@ -672,7 +672,7 @@ void pdf_backend(paragraph *sourceform, keywordlist *keywords,
     else
 	fp = fopen(filename, "wb");
     if (!fp) {
-	err_cantopenw(filename);
+	err_cantopenw(es, filename);
 	return;
     }
 

@@ -59,7 +59,7 @@ indextag *index_findtag(indexdata *idx, wchar_t *name) {
  * before the explicit ones.
  */
 void index_merge(indexdata *idx, bool is_explicit, wchar_t *tags, word *text,
-		 filepos *fpos) {
+		 filepos *fpos, errorstate *es) {
     indextag *t, *existing;
 
     /*
@@ -99,7 +99,7 @@ void index_merge(indexdata *idx, bool is_explicit, wchar_t *tags, word *text,
 	     * warn (and drop it, since it won't be referenced).
 	     */
 	    if (is_explicit) {
-		err_nosuchidxtag(fpos, tags);
+		err_nosuchidxtag(es, fpos, tags);
 		continue;
 	    }
 
@@ -123,7 +123,7 @@ void index_merge(indexdata *idx, bool is_explicit, wchar_t *tags, word *text,
 		 * see if the cases match.
 		 */
 		if (ustrcmp(t->name, existing->name)) {
-		    err_indexcase(fpos, t->name,
+		    err_indexcase(es, fpos, t->name,
 			  &existing->implicit_fpos, existing->name);
 		}
 

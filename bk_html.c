@@ -150,6 +150,7 @@ typedef struct {
     void (*write)(void *write_ctx, const char *data, int len);
     int charset, restrict_charset;
     charset_state cstate;
+    errorstate *es;
     int ver;
     enum {
 	HO_NEUTRAL, HO_IN_TAG, HO_IN_EMPTY_TAG, HO_IN_TEXT
@@ -192,7 +193,7 @@ void ho_setup_file(htmloutput *ho, const char *filename)
         ho->write = ho_write_file;
         ho->write_ctx = fp;
     } else {
-        err_cantopenw(filename);
+        err_cantopenw(ho->es, filename);
         ho->write = ho_write_ignore; /* saves conditionalising rest of code */
     }
 }
@@ -336,7 +337,8 @@ static void html_section_title(htmloutput *ho, htmlsect *s,
 			       htmlfile *thisfile, keywordlist *keywords,
 			       htmlconfig *cfg, bool real);
 
-static htmlconfig html_configure(paragraph *source, bool chm_mode)
+static htmlconfig html_configure(paragraph *source, bool chm_mode,
+                                 errorstate *es)
 {
     htmlconfig ret;
     paragraph *p;
@@ -447,9 +449,11 @@ static htmlconfig html_configure(paragraph *source, bool chm_mode)
             }
 
 	    if (!ustricmp(k, L"restrict-charset")) {
-		ret.restrict_charset = charset_from_ustr(&p->fpos, uadv(k));
+		ret.restrict_charset = charset_from_ustr(
+                    &p->fpos, uadv(k), es);
 	    } else if (!ustricmp(k, L"output-charset")) {
-		ret.output_charset = charset_from_ustr(&p->fpos, uadv(k));
+		ret.output_charset = charset_from_ustr(
+                    &p->fpos, uadv(k), es);
 	    } else if (!ustricmp(k, L"version")) {
 		wchar_t *vername = uadv(k);
 		static const struct {
@@ -469,7 +473,7 @@ static htmlconfig html_configure(paragraph *source, bool chm_mode)
 			break;
 
 		if (i == lenof(versions))
-		    err_htmlver(&p->fpos, vername);
+		    err_htmlver(es, &p->fpos, vername);
 		else
 		    ret.htmlver = versions[i].ver;
 	    } else if (!ustricmp(k, L"single-filename")) {
@@ -502,7 +506,7 @@ static htmlconfig html_configure(paragraph *source, bool chm_mode)
 			frag = adv(frag);
 		    }
 		} else
-		    err_cfginsufarg(&p->fpos, p->origkeyword, 1);
+		    err_cfginsufarg(es, &p->fpos, p->origkeyword, 1);
 	    } else if (!ustricmp(k, L"chapter-numeric")) {
 		ret.achapter.just_numbers = utob(uadv(k));
 	    } else if (!ustricmp(k, L"chapter-shownumber")) {
@@ -676,7 +680,7 @@ static htmlconfig html_configure(paragraph *source, bool chm_mode)
                         chmname = diskname;
 
                     if (chmname[0] == '#' || chmname[0] == '$')
-                        err_chm_badname(&p->fpos, chmname);
+                        err_chm_badname(es, &p->fpos, chmname);
 
                     if (ret.nchmextrafiles >= ret.chmextrafilesize) {
                         ret.chmextrafilesize = ret.nchmextrafiles * 5 / 4 + 32;
@@ -707,7 +711,7 @@ static htmlconfig html_configure(paragraph *source, bool chm_mode)
          * turn both off.
          */
         if (!ret.chm_filename ^ !ret.hhp_filename) {
-            err_chmnames();
+            err_chmnames(es);
             sfree(ret.chm_filename); ret.chm_filename = NULL;
             sfree(ret.hhp_filename); ret.hhp_filename = NULL;
         }
@@ -758,7 +762,7 @@ paragraph *chm_config_filename(char *filename)
 }
 
 static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
-                                indexdata *idx, bool chm_mode)
+                                indexdata *idx, errorstate *es, bool chm_mode)
 {
     paragraph *p;
     htmlsect *topsect;
@@ -768,7 +772,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
     struct chm *chm = NULL;
     bool has_index, hhk_needed = false;
 
-    conf = html_configure(sourceform, chm_mode);
+    conf = html_configure(sourceform, chm_mode, es);
 
     /*
      * We're going to make heavy use of paragraphs' private data
@@ -1060,6 +1064,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 	    ho.charset = conf.output_charset;
 	    ho.restrict_charset = conf.restrict_charset;
 	    ho.cstate = charset_init_state;
+            ho.es = es;
 	    ho.ver = conf.htmlver;
 	    ho.state = HO_NEUTRAL;
 	    ho.contents_level = 0;
@@ -1880,6 +1885,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
             ho.charset = CS_CP1252; /* as far as I know, CHM is */
             ho.restrict_charset = CS_CP1252; /* hardwired to this charset */
             ho.cstate = charset_init_state;
+            ho.es = es;
             ho.ver = HTML_4;	       /* *shrug* */
             ho.state = HO_NEUTRAL;
             ho.contents_level = 0;
@@ -1932,6 +1938,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
                 ho.charset = CS_CP1252;
                 ho.restrict_charset = CS_CP1252;
                 ho.cstate = charset_init_state;
+                ho.es = es;
                 ho.ver = HTML_4;	       /* *shrug* */
                 ho.state = HO_NEUTRAL;
                 ho.contents_level = 0;
@@ -1975,7 +1982,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 
                 fp = fopen(fname, "rb");
                 if (!fp) {
-                    err_cantopen(fname);
+                    err_cantopen(es, fname);
                     continue;
                 }
 
@@ -2005,6 +2012,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 	ho.charset = CS_CP1252;	       /* as far as I know, HHP files are */
 	ho.restrict_charset = CS_CP1252;   /* hardwired to this charset */
 	ho.cstate = charset_init_state;
+        ho.es = es;
 	ho.ver = HTML_4;	       /* *shrug* */
 	ho.state = HO_NEUTRAL;
 	ho.contents_level = 0;
@@ -2104,6 +2112,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 	ho.charset = CS_CP1252;	       /* as far as I know, HHC files are */
 	ho.restrict_charset = CS_CP1252;   /* hardwired to this charset */
 	ho.cstate = charset_init_state;
+        ho.es = es;
 	ho.ver = HTML_4;	       /* *shrug* */
 	ho.state = HO_NEUTRAL;
 	ho.contents_level = 0;
@@ -2222,6 +2231,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 	ho.charset = CS_CP1252;	       /* as far as I know, HHK files are */
 	ho.restrict_charset = CS_CP1252;   /* hardwired to this charset */
 	ho.cstate = charset_init_state;
+        ho.es = es;
 	ho.ver = HTML_4;	       /* *shrug* */
 	ho.state = HO_NEUTRAL;
 	ho.contents_level = 0;
@@ -2305,7 +2315,7 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 
         fp = fopen(conf.chm_filename, "wb");
         if (!fp) {
-            err_cantopenw(conf.chm_filename);
+            err_cantopenw(es, conf.chm_filename);
         } else {
             data = chm_build(chm, &len);
             fwrite(data, 1, len, fp);
@@ -2421,17 +2431,17 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
 }
 
 void html_backend(paragraph *sourceform, keywordlist *keywords,
-                  indexdata *idx, void *unused)
+                  indexdata *idx, void *unused, errorstate *es)
 {
     IGNORE(unused);
-    html_backend_common(sourceform, keywords, idx, false);
+    html_backend_common(sourceform, keywords, idx, es, false);
 }
 
 void chm_backend(paragraph *sourceform, keywordlist *keywords,
-                 indexdata *idx, void *unused)
+                 indexdata *idx, void *unused, errorstate *es)
 {
     IGNORE(unused);
-    html_backend_common(sourceform, keywords, idx, true);
+    html_backend_common(sourceform, keywords, idx, es, true);
 }
 
 static void html_file_section(htmlconfig *cfg, htmlfilelist *files,

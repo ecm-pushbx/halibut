@@ -34,6 +34,7 @@ typedef struct {
     FILE *fp;
     int charset;
     charset_state state;
+    errorstate *es;
 } textfile;
 
 static void text_heading(textfile *, word *, word *, word *, alignstruct,
@@ -55,7 +56,7 @@ static alignment utoalign(wchar_t *p) {
     return LEFT;
 }
 
-static textconfig text_configure(paragraph *source) {
+static textconfig text_configure(paragraph *source, errorstate *es) {
     textconfig ret;
     paragraph *p;
     int n;
@@ -131,7 +132,8 @@ static textconfig text_configure(paragraph *source) {
 	    if (!ustricmp(p->keyword, L"text-indent")) {
 		ret.indent = utoi(uadv(p->keyword));
 	    } else if (!ustricmp(p->keyword, L"text-charset")) {
-		ret.charset = charset_from_ustr(&p->fpos, uadv(p->keyword));
+		ret.charset = charset_from_ustr(
+                    &p->fpos, uadv(p->keyword), es);
 	    } else if (!ustricmp(p->keyword, L"text-filename")) {
 		sfree(ret.filename);
 		ret.filename = dupstr(adv(p->origkeyword));
@@ -318,7 +320,7 @@ paragraph *text_config_filename(char *filename)
 }
 
 void text_backend(paragraph *sourceform, keywordlist *keywords,
-		  indexdata *idx, void *unused) {
+		  indexdata *idx, void *unused, errorstate *es) {
     paragraph *p;
     textconfig conf;
     word *prefix, *body, *wp;
@@ -332,7 +334,7 @@ void text_backend(paragraph *sourceform, keywordlist *keywords,
     IGNORE(keywords);		       /* we don't happen to need this */
     IGNORE(idx);		       /* or this */
 
-    conf = text_configure(sourceform);
+    conf = text_configure(sourceform, es);
 
     /*
      * Open the output file.
@@ -342,10 +344,11 @@ void text_backend(paragraph *sourceform, keywordlist *keywords,
     else
 	tf.fp = fopen(conf.filename, "w");
     if (!tf.fp) {
-	err_cantopenw(conf.filename);
+	err_cantopenw(es, conf.filename);
 	return;
     }
     tf.charset = conf.charset;
+    tf.es = es;
     tf.state = charset_init_state;
 
     /* Do the title */
@@ -782,7 +785,7 @@ static void text_codepara(textfile *tf, word *text, int indent, int width) {
     for (; text; text = text->next) if (text->type == word_WeakCode) {
 	int wid = ustrwid(text->text, tf->charset);
 	if (wid > width)
-	    err_text_codeline(&text->fpos, wid, width);
+	    err_text_codeline(tf->es, &text->fpos, wid, width);
 	text_output_many(tf, indent, L' ');
 	text_output(tf, text->text);
 	text_output(tf, L"\n");

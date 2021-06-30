@@ -197,7 +197,7 @@ static bool fonts_ok(wchar_t *string, ...)
 }
 
 static void paper_cfg_fonts(font_data **fonts, font_list *fontlist,
-			    wchar_t *wp, filepos *fpos) {
+			    wchar_t *wp, filepos *fpos, errorstate *es) {
     font_data *f;
     char *fn;
     int i;
@@ -209,11 +209,12 @@ static void paper_cfg_fonts(font_data **fonts, font_list *fontlist,
 	    fonts[i] = f;
 	else
 	    /* FIXME: proper error */
-	    err_nofont(fpos, wp);
+	    err_nofont(es, fpos, wp);
     }
 }
 
-static paper_conf paper_configure(paragraph *source, font_list *fontlist) {
+static paper_conf paper_configure(paragraph *source, font_list *fontlist,
+                                  errorstate *es) {
     paragraph *p;
     paper_conf ret;
 
@@ -402,22 +403,22 @@ static paper_conf paper_configure(paragraph *source, font_list *fontlist) {
 		ret.pagenum_fontsize = utoi(uadv(p->keyword));
 	    } else if (!ustricmp(p->keyword, L"paper-base-fonts")) {
 		paper_cfg_fonts(ret.fbase.fonts, fontlist, uadv(p->keyword),
-				&p->fpos);
+				&p->fpos, es);
 	    } else if (!ustricmp(p->keyword, L"paper-code-font-size")) {
 		ret.fcode.font_size = utoi(uadv(p->keyword));
 	    } else if (!ustricmp(p->keyword, L"paper-code-fonts")) {
 		paper_cfg_fonts(ret.fcode.fonts, fontlist, uadv(p->keyword),
-				&p->fpos);
+				&p->fpos, es);
 	    } else if (!ustricmp(p->keyword, L"paper-title-font-size")) {
 		ret.ftitle.font_size = utoi(uadv(p->keyword));
 	    } else if (!ustricmp(p->keyword, L"paper-title-fonts")) {
 		paper_cfg_fonts(ret.ftitle.fonts, fontlist, uadv(p->keyword),
-				&p->fpos);
+				&p->fpos, es);
 	    } else if (!ustricmp(p->keyword, L"paper-chapter-font-size")) {
 		ret.fchapter.font_size = utoi(uadv(p->keyword));
 	    } else if (!ustricmp(p->keyword, L"paper-chapter-fonts")) {
 		paper_cfg_fonts(ret.fchapter.fonts, fontlist, uadv(p->keyword),
-				&p->fpos);
+				&p->fpos, es);
 	    } else if (!ustricmp(p->keyword, L"paper-section-font-size")) {
 		wchar_t *q = uadv(p->keyword);
 		int n = 0;
@@ -447,7 +448,7 @@ static paper_conf paper_configure(paragraph *source, font_list *fontlist) {
 			ret.fsect[i] = ret.fsect[ret.nfsect-1];
 		    ret.nfsect = n+1;
 		}
-		paper_cfg_fonts(ret.fsect[n].fonts, fontlist, q, &p->fpos);
+		paper_cfg_fonts(ret.fsect[n].fonts, fontlist, q, &p->fpos, es);
 	    } 
 	}
     }
@@ -523,7 +524,7 @@ static paper_conf paper_configure(paragraph *source, font_list *fontlist) {
 }
 
 void *paper_pre_backend(paragraph *sourceform, keywordlist *keywords,
-			indexdata *idx) {
+			indexdata *idx, errorstate *es) {
     paragraph *p;
     document *doc;
     int indent;
@@ -543,7 +544,7 @@ void *paper_pre_backend(paragraph *sourceform, keywordlist *keywords,
     fontlist = snew(font_list);
     fontlist->head = fontlist->tail = NULL;
 
-    ourconf = paper_configure(sourceform, fontlist);
+    ourconf = paper_configure(sourceform, fontlist, es);
     conf = &ourconf;
 
     /*

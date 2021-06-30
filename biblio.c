@@ -20,10 +20,11 @@ static wchar_t *gentext(int num) {
     return ustrdup(p);
 }
 
-static void cite_biblio(keywordlist *kl, wchar_t *key, filepos fpos) {
+static void cite_biblio(keywordlist *kl, wchar_t *key, filepos fpos,
+                        errorstate *es) {
     keyword *kw = kw_lookup(kl, key);
     if (!kw)
-	err_nosuchkw(&fpos, key);
+	err_nosuchkw(es, &fpos, key);
     else {
 	/*
 	 * We've found a \k reference. If it's a
@@ -44,7 +45,7 @@ static void cite_biblio(keywordlist *kl, wchar_t *key, filepos fpos) {
  * entries are actually cited (or \nocite-ed).
  */
 
-void gen_citations(paragraph *source, keywordlist *kl) {
+void gen_citations(paragraph *source, keywordlist *kl, errorstate *es) {
     paragraph *para;
     int bibnum = 0;
 
@@ -57,16 +58,16 @@ void gen_citations(paragraph *source, keywordlist *kl) {
 	if (para->type == para_BR) {
 	    keyword *kw = kw_lookup(kl, para->keyword);
 	    if (!kw) {
-		err_nosuchkw(&para->fpos, para->keyword);
+		err_nosuchkw(es, &para->fpos, para->keyword);
 	    } else if (kw->text) {
-		err_multiBR(&para->fpos, para->keyword);
+		err_multiBR(es, &para->fpos, para->keyword);
 	    } else {
 		kw->text = dup_word_list(para->words);
 	    }
 	} else if (para->type == para_NoCite) {
 	    wchar_t *wp = para->keyword;
 	    while (*wp) {
-		cite_biblio(kl, wp, para->fpos);
+		cite_biblio(kl, wp, para->fpos, es);
 		wp = uadv(wp);
 	    }
 	}
@@ -77,7 +78,7 @@ void gen_citations(paragraph *source, keywordlist *kl) {
 	for (ptr = para->words; ptr; ptr = ptr->next) {
 	    if (ptr->type == word_UpperXref ||
 		ptr->type == word_LowerXref)
-		cite_biblio(kl, ptr->text, ptr->fpos);
+		cite_biblio(kl, ptr->text, ptr->fpos, es);
 	}
     }
 

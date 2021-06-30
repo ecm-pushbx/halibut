@@ -412,8 +412,8 @@ void ps_token(FILE *fp, int *cc, char const *fmt, ...);
 /*
  * Backend functions exported by in_pf.c
  */
-void pf_part1(font_info *fi, char **bufp, size_t *lenp);
-void pf_part2(font_info *fi, char **bufp, size_t *lenp);
+void pf_part1(font_info *fi, char **bufp, size_t *lenp, errorstate *es);
+void pf_part2(font_info *fi, char **bufp, size_t *lenp, errorstate *es);
 void pf_writeps(font_info const *fi, FILE *ofp);
 
 /*
@@ -423,7 +423,7 @@ typedef struct sfnt_Tag sfnt;
 glyph sfnt_indextoglyph(sfnt *sf, unsigned idx);
 unsigned sfnt_glyphtoindex(sfnt *sf, glyph g);
 unsigned sfnt_nglyphs(sfnt *sf);
-void sfnt_writeps(font_info const *fi, FILE *ofp);
+void sfnt_writeps(font_info const *fi, FILE *ofp, errorstate *es);
 void sfnt_data(font_info *fi, char **bufp, size_t *lenp);
 
 #endif

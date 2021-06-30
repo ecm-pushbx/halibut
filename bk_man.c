@@ -114,7 +114,7 @@ static bool troff_ok(int charset, wchar_t *string) {
     return true;
 }
 
-static manconfig man_configure(paragraph *source) {
+static manconfig man_configure(paragraph *source, errorstate *es) {
     paragraph *p;
     manconfig ret;
 
@@ -161,7 +161,8 @@ static manconfig man_configure(paragraph *source) {
 		ret.th = snewn(ep - wp + 1, wchar_t);
 		memcpy(ret.th, wp, (ep - wp + 1) * sizeof(wchar_t));
 	    } else if (!ustricmp(p->keyword, L"man-charset")) {
-		ret.charset = charset_from_ustr(&p->fpos, uadv(p->keyword));
+		ret.charset = charset_from_ustr(
+                    &p->fpos, uadv(p->keyword), es);
 	    } else if (!ustricmp(p->keyword, L"man-headnumbers")) {
 		ret.headnumbers = utob(uadv(p->keyword));
 	    } else if (!ustricmp(p->keyword, L"man-mindepth")) {
@@ -220,7 +221,7 @@ paragraph *man_config_filename(char *filename)
 #define QUOTE_LITERAL     4 /* defeat special meaning of `, ', - in troff */
 
 void man_backend(paragraph *sourceform, keywordlist *keywords,
-		 indexdata *idx, void *unused) {
+		 indexdata *idx, void *unused, errorstate *es) {
     paragraph *p;
     FILE *fp;
     manconfig conf;
@@ -230,7 +231,7 @@ void man_backend(paragraph *sourceform, keywordlist *keywords,
     IGNORE(keywords);
     IGNORE(idx);
 
-    conf = man_configure(sourceform);
+    conf = man_configure(sourceform, es);
 
     /*
      * Open the output file.
@@ -240,7 +241,7 @@ void man_backend(paragraph *sourceform, keywordlist *keywords,
     else
 	fp = fopen(conf.filename, "w");
     if (!fp) {
-	err_cantopenw(conf.filename);
+	err_cantopenw(es, conf.filename);
 	return;
     }
 

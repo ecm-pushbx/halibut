@@ -121,10 +121,12 @@ static int info_check_index(word *, node *, indexdata *);
 static int info_rdaddwc(info_data *, word *, word *, bool, infoconfig *);
 
 static node *info_node_new(char *name, int charset);
-static char *info_node_name_for_para(paragraph *p, infoconfig *);
-static char *info_node_name_for_text(wchar_t *text, infoconfig *);
+static char *info_node_name_for_para(paragraph *p, infoconfig *,
+                                     errorstate *);
+static char *info_node_name_for_text(wchar_t *text, infoconfig *,
+                                     errorstate *);
 
-static infoconfig info_configure(paragraph *source) {
+static infoconfig info_configure(paragraph *source, errorstate *es) {
     infoconfig ret;
     paragraph *p;
     int n;
@@ -187,7 +189,8 @@ static infoconfig info_configure(paragraph *source) {
 		sfree(ret.filename);
 		ret.filename = dupstr(adv(p->origkeyword));
 	    } else if (!ustricmp(p->keyword, L"info-charset")) {
-		ret.charset = charset_from_ustr(&p->fpos, uadv(p->keyword));
+		ret.charset = charset_from_ustr(
+                    &p->fpos, uadv(p->keyword), es);
 	    } else if (!ustricmp(p->keyword, L"info-max-file-size")) {
 		ret.maxfilesize = utoi(uadv(p->keyword));
 	    } else if (!ustricmp(p->keyword, L"info-width")) {
@@ -307,7 +310,7 @@ paragraph *info_config_filename(char *filename)
 }
 
 void info_backend(paragraph *sourceform, keywordlist *keywords,
-		  indexdata *idx, void *unused) {
+		  indexdata *idx, void *unused, errorstate *es) {
     paragraph *p;
     infoconfig conf;
     word *prefix, *body, *wp;
@@ -324,7 +327,7 @@ void info_backend(paragraph *sourceform, keywordlist *keywords,
 
     IGNORE(unused);
 
-    conf = info_configure(sourceform);
+    conf = info_configure(sourceform, es);
 
     /*
      * Go through and create a node for each section.
@@ -344,7 +347,7 @@ void info_backend(paragraph *sourceform, keywordlist *keywords,
 	    node *newnode, *upnode;
 	    char *nodename;
 
-	    nodename = info_node_name_for_para(p, &conf);
+	    nodename = info_node_name_for_para(p, &conf, es);
 	    newnode = info_node_new(nodename, conf.charset);
 	    sfree(nodename);
 
@@ -418,7 +421,7 @@ void info_backend(paragraph *sourceform, keywordlist *keywords,
 	    kw = *longname ? uadv(longname) : L"";
 
 	    if (!*longname) {
-		err_cfginsufarg(&p->fpos, p->origkeyword, 3);
+		err_cfginsufarg(es, &p->fpos, p->origkeyword, 3);
 		continue;
 	    }
 
@@ -602,7 +605,7 @@ void info_backend(paragraph *sourceform, keywordlist *keywords,
 	indexentry *entry;
 	char *nodename;
 
-	nodename = info_node_name_for_text(conf.index_text, &conf);
+	nodename = info_node_name_for_text(conf.index_text, &conf, es);
 	newnode = info_node_new(nodename, conf.charset);
 	sfree(nodename);
 
@@ -707,7 +710,7 @@ void info_backend(paragraph *sourceform, keywordlist *keywords,
      */
     fp = fopen(conf.filename, "w");
     if (!fp) {
-	err_cantopenw(conf.filename);
+	err_cantopenw(es, conf.filename);
 	return;
     }
     fputs(intro_text.output.text, fp);
@@ -751,7 +754,7 @@ void info_backend(paragraph *sourceform, keywordlist *keywords,
 		sprintf(fname, "%s-%d", conf.filename, filenum);
 		fp = fopen(fname, "w");
 		if (!fp) {
-		    err_cantopenw(fname);
+		    err_cantopenw(es, fname);
 		    return;
 		}
 		sfree(fname);
@@ -1169,7 +1172,7 @@ static node *info_node_new(char *name, int charset)
     return n;
 }
 
-static char *info_node_name_core(info_data *id, filepos *fpos)
+static char *info_node_name_core(info_data *id, filepos *fpos, errorstate *es)
 {
     char *p, *q;
 
@@ -1180,7 +1183,7 @@ static char *info_node_name_core(info_data *id, filepos *fpos)
     p = q = id->output.text;
     while (*p) {
 	if (*p == ':' || *p == ',' || *p == '(' || *p == ')') {
-	    err_infonodechar(fpos, *p);
+	    err_infonodechar(es, fpos, *p);
 	} else {
 	    *q++ = *p;
 	}
@@ -1191,7 +1194,8 @@ static char *info_node_name_core(info_data *id, filepos *fpos)
     return id->output.text;
 }
 
-static char *info_node_name_for_para(paragraph *par, infoconfig *cfg)
+static char *info_node_name_for_para(paragraph *par, infoconfig *cfg,
+                                     errorstate *es)
 {
     info_data id = EMPTY_INFO_DATA;
 
@@ -1200,10 +1204,11 @@ static char *info_node_name_for_para(paragraph *par, infoconfig *cfg)
 		 NULL, false, cfg);
     info_rdaddsc(&id, NULL);
 
-    return info_node_name_core(&id, &par->fpos);
+    return info_node_name_core(&id, &par->fpos, es);
 }
 
-static char *info_node_name_for_text(wchar_t *text, infoconfig *cfg)
+static char *info_node_name_for_text(wchar_t *text, infoconfig *cfg,
+                                     errorstate *es)
 {
     info_data id = EMPTY_INFO_DATA;
 
@@ -1211,7 +1216,7 @@ static char *info_node_name_for_text(wchar_t *text, infoconfig *cfg)
     info_rdadds(&id, text);
     info_rdaddsc(&id, NULL);
 
-    return info_node_name_core(&id, NULL);
+    return info_node_name_core(&id, NULL, es);
 }
 
 static void info_menu_item(info_data *text, node *n, paragraph *p,

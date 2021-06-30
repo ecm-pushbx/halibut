@@ -22,7 +22,7 @@ paragraph *ps_config_filename(char *filename)
 }
 
 void ps_backend(paragraph *sourceform, keywordlist *keywords,
-		indexdata *idx, void *vdoc) {
+		indexdata *idx, void *vdoc, errorstate *es) {
     document *doc = (document *)vdoc;
     int font_index;
     font_encoding *fe;
@@ -53,7 +53,7 @@ void ps_backend(paragraph *sourceform, keywordlist *keywords,
     else
 	fp = fopen(filename, "w");
     if (!fp) {
-	err_cantopenw(filename);
+	err_cantopenw(es, filename);
 	return;
     }
 
@@ -205,7 +205,7 @@ void ps_backend(paragraph *sourceform, keywordlist *keywords,
 	    if (fe->font->info->filetype == TYPE1)
 		pf_writeps(fe->font->info, fp);
 	    else
-		sfnt_writeps(fe->font->info, fp);
+		sfnt_writeps(fe->font->info, fp, es);
 	    fprintf(fp, "%%%%EndResource\n");
 	} else {
 	    fprintf(fp, "%%%%IncludeResource: font %s\n",
