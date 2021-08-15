@@ -141,7 +141,8 @@ enum {
 /* Flags for render_string() */
 #define RS_NOLIG	1
 
-static font_data *make_std_font(font_list *fontlist, char const *name);
+static font_data *make_std_font(font_list *fontlist, psdata *psd,
+                                const char *name);
 static void wrap_paragraph(para_data *pdata, word *words,
 			   int w, int i1, int i2, paper_conf *conf);
 static page_data *page_breaks(line_data *first, line_data *last,
@@ -174,8 +175,6 @@ static word *prepare_contents_title(word *first, wchar_t *separator,
 				    word *second);
 static void fold_into_page(page_data *dest, page_data *src, int right_shift);
 
-font_info *all_fonts;
-
 static bool fonts_ok(wchar_t *string, ...)
 {
     font_data *font;
@@ -197,14 +196,15 @@ static bool fonts_ok(wchar_t *string, ...)
 }
 
 static void paper_cfg_fonts(font_data **fonts, font_list *fontlist,
-			    wchar_t *wp, filepos *fpos, errorstate *es) {
+			    wchar_t *wp, filepos *fpos, psdata *psd,
+                            errorstate *es) {
     font_data *f;
     char *fn;
     int i;
 
     for (i = 0; i < NFONTS && *wp; i++, wp = uadv(wp)) {
 	fn = utoa_dup(wp, CS_ASCII);
-	f = make_std_font(fontlist, fn);
+	f = make_std_font(fontlist, psd, fn);
 	if (f)
 	    fonts[i] = f;
 	else
@@ -214,7 +214,7 @@ static void paper_cfg_fonts(font_data **fonts, font_list *fontlist,
 }
 
 static paper_conf paper_configure(paragraph *source, font_list *fontlist,
-                                  errorstate *es) {
+                                  psdata *psd, errorstate *es) {
     paragraph *p;
     paper_conf ret;
 
@@ -238,52 +238,70 @@ static paper_conf paper_configure(paragraph *source, font_list *fontlist,
     ret.chapter_underline_thickness = 3 * UNITS_PER_PT;
     ret.rule_thickness = 1 * UNITS_PER_PT;
     ret.fbase.font_size = 12;
-    ret.fbase.fonts[FONT_NORMAL] = make_std_font(fontlist, "Times-Roman");
-    ret.fbase.fonts[FONT_EMPH] = make_std_font(fontlist, "Times-Italic");
-    ret.fbase.fonts[FONT_STRONG] = make_std_font(fontlist, "Times-Bold");
-    ret.fbase.fonts[FONT_CODE] = make_std_font(fontlist, "Courier");
+    ret.fbase.fonts[FONT_NORMAL] =
+        make_std_font(fontlist, psd, "Times-Roman");
+    ret.fbase.fonts[FONT_EMPH] =
+        make_std_font(fontlist, psd, "Times-Italic");
+    ret.fbase.fonts[FONT_STRONG] =
+        make_std_font(fontlist, psd, "Times-Bold");
+    ret.fbase.fonts[FONT_CODE] =
+        make_std_font(fontlist, psd, "Courier");
     ret.fcode.font_size = 12;
-    ret.fcode.fonts[FONT_NORMAL] = make_std_font(fontlist, "Courier-Bold");
-    ret.fcode.fonts[FONT_EMPH] = make_std_font(fontlist, "Courier-Oblique");
-    ret.fcode.fonts[FONT_STRONG] = make_std_font(fontlist, "Courier-Bold");
-    ret.fcode.fonts[FONT_CODE] = make_std_font(fontlist, "Courier");
+    ret.fcode.fonts[FONT_NORMAL] =
+        make_std_font(fontlist, psd, "Courier-Bold");
+    ret.fcode.fonts[FONT_EMPH] =
+        make_std_font(fontlist, psd, "Courier-Oblique");
+    ret.fcode.fonts[FONT_STRONG] =
+        make_std_font(fontlist, psd, "Courier-Bold");
+    ret.fcode.fonts[FONT_CODE] =
+        make_std_font(fontlist, psd, "Courier");
     ret.ftitle.font_size = 24;
-    ret.ftitle.fonts[FONT_NORMAL] = make_std_font(fontlist, "Helvetica-Bold");
+    ret.ftitle.fonts[FONT_NORMAL] =
+        make_std_font(fontlist, psd, "Helvetica-Bold");
     ret.ftitle.fonts[FONT_EMPH] =
-	make_std_font(fontlist, "Helvetica-BoldOblique");
+	make_std_font(fontlist, psd, "Helvetica-BoldOblique");
     ret.ftitle.fonts[FONT_STRONG] =
-	make_std_font(fontlist, "Helvetica-Bold");
-    ret.ftitle.fonts[FONT_CODE] = make_std_font(fontlist, "Courier-Bold");
+	make_std_font(fontlist, psd,"Helvetica-Bold");
+    ret.ftitle.fonts[FONT_CODE] =
+        make_std_font(fontlist, psd, "Courier-Bold");
     ret.fchapter.font_size = 20;
-    ret.fchapter.fonts[FONT_NORMAL]= make_std_font(fontlist, "Helvetica-Bold");
+    ret.fchapter.fonts[FONT_NORMAL] = 
+        make_std_font(fontlist, psd, "Helvetica-Bold");
     ret.fchapter.fonts[FONT_EMPH] =
-	make_std_font(fontlist, "Helvetica-BoldOblique");
+	make_std_font(fontlist, psd,"Helvetica-BoldOblique");
     ret.fchapter.fonts[FONT_STRONG] =
-	make_std_font(fontlist, "Helvetica-Bold");
-    ret.fchapter.fonts[FONT_CODE] = make_std_font(fontlist, "Courier-Bold");
+	make_std_font(fontlist, psd,"Helvetica-Bold");
+    ret.fchapter.fonts[FONT_CODE] =
+        make_std_font(fontlist, psd, "Courier-Bold");
     ret.nfsect = 3;
     ret.fsect = snewn(ret.nfsect, font_cfg);
     ret.fsect[0].font_size = 16;
-    ret.fsect[0].fonts[FONT_NORMAL]= make_std_font(fontlist, "Helvetica-Bold");
+    ret.fsect[0].fonts[FONT_NORMAL] =
+        make_std_font(fontlist, psd, "Helvetica-Bold");
     ret.fsect[0].fonts[FONT_EMPH] =
-	make_std_font(fontlist, "Helvetica-BoldOblique");
+	make_std_font(fontlist, psd,"Helvetica-BoldOblique");
     ret.fsect[0].fonts[FONT_STRONG] =
-	make_std_font(fontlist, "Helvetica-Bold");
-    ret.fsect[0].fonts[FONT_CODE] = make_std_font(fontlist, "Courier-Bold");
+	make_std_font(fontlist, psd,"Helvetica-Bold");
+    ret.fsect[0].fonts[FONT_CODE] =
+        make_std_font(fontlist, psd, "Courier-Bold");
     ret.fsect[1].font_size = 14;
-    ret.fsect[1].fonts[FONT_NORMAL]= make_std_font(fontlist, "Helvetica-Bold");
+    ret.fsect[1].fonts[FONT_NORMAL] =
+        make_std_font(fontlist, psd, "Helvetica-Bold");
     ret.fsect[1].fonts[FONT_EMPH] =
-	make_std_font(fontlist, "Helvetica-BoldOblique");
+	make_std_font(fontlist, psd, "Helvetica-BoldOblique");
     ret.fsect[1].fonts[FONT_STRONG] =
-	make_std_font(fontlist, "Helvetica-Bold");
-    ret.fsect[1].fonts[FONT_CODE] = make_std_font(fontlist, "Courier-Bold");
+	make_std_font(fontlist, psd, "Helvetica-Bold");
+    ret.fsect[1].fonts[FONT_CODE] =
+        make_std_font(fontlist, psd, "Courier-Bold");
     ret.fsect[2].font_size = 13;
-    ret.fsect[2].fonts[FONT_NORMAL]= make_std_font(fontlist, "Helvetica-Bold");
+    ret.fsect[2].fonts[FONT_NORMAL] =
+        make_std_font(fontlist, psd, "Helvetica-Bold");
     ret.fsect[2].fonts[FONT_EMPH] =
-	make_std_font(fontlist, "Helvetica-BoldOblique");
+	make_std_font(fontlist, psd, "Helvetica-BoldOblique");
     ret.fsect[2].fonts[FONT_STRONG] =
-	make_std_font(fontlist, "Helvetica-Bold");
-    ret.fsect[2].fonts[FONT_CODE] = make_std_font(fontlist, "Courier-Bold");
+	make_std_font(fontlist, psd, "Helvetica-Bold");
+    ret.fsect[2].fonts[FONT_CODE] =
+        make_std_font(fontlist, psd, "Courier-Bold");
     ret.contents_indent_step = 24 * UNITS_PER_PT;
     ret.contents_margin = 84 * UNITS_PER_PT;
     ret.leader_separation = 12 * UNITS_PER_PT;
@@ -403,22 +421,22 @@ static paper_conf paper_configure(paragraph *source, font_list *fontlist,
 		ret.pagenum_fontsize = utoi(uadv(p->keyword));
 	    } else if (!ustricmp(p->keyword, L"paper-base-fonts")) {
 		paper_cfg_fonts(ret.fbase.fonts, fontlist, uadv(p->keyword),
-				&p->fpos, es);
+				&p->fpos, psd, es);
 	    } else if (!ustricmp(p->keyword, L"paper-code-font-size")) {
 		ret.fcode.font_size = utoi(uadv(p->keyword));
 	    } else if (!ustricmp(p->keyword, L"paper-code-fonts")) {
 		paper_cfg_fonts(ret.fcode.fonts, fontlist, uadv(p->keyword),
-				&p->fpos, es);
+				&p->fpos, psd, es);
 	    } else if (!ustricmp(p->keyword, L"paper-title-font-size")) {
 		ret.ftitle.font_size = utoi(uadv(p->keyword));
 	    } else if (!ustricmp(p->keyword, L"paper-title-fonts")) {
 		paper_cfg_fonts(ret.ftitle.fonts, fontlist, uadv(p->keyword),
-				&p->fpos, es);
+				&p->fpos, psd, es);
 	    } else if (!ustricmp(p->keyword, L"paper-chapter-font-size")) {
 		ret.fchapter.font_size = utoi(uadv(p->keyword));
 	    } else if (!ustricmp(p->keyword, L"paper-chapter-fonts")) {
 		paper_cfg_fonts(ret.fchapter.fonts, fontlist, uadv(p->keyword),
-				&p->fpos, es);
+				&p->fpos, psd, es);
 	    } else if (!ustricmp(p->keyword, L"paper-section-font-size")) {
 		wchar_t *q = uadv(p->keyword);
 		int n = 0;
@@ -448,7 +466,8 @@ static paper_conf paper_configure(paragraph *source, font_list *fontlist,
 			ret.fsect[i] = ret.fsect[ret.nfsect-1];
 		    ret.nfsect = n+1;
 		}
-		paper_cfg_fonts(ret.fsect[n].fonts, fontlist, q, &p->fpos, es);
+		paper_cfg_fonts(ret.fsect[n].fonts, fontlist, q, &p->fpos,
+                                psd, es);
 	    } 
 	}
     }
@@ -524,7 +543,7 @@ static paper_conf paper_configure(paragraph *source, font_list *fontlist,
 }
 
 void *paper_pre_backend(paragraph *sourceform, keywordlist *keywords,
-			indexdata *idx, errorstate *es) {
+			indexdata *idx, psdata *psd, errorstate *es) {
     paragraph *p;
     document *doc;
     int indent;
@@ -540,11 +559,11 @@ void *paper_pre_backend(paragraph *sourceform, keywordlist *keywords,
     paragraph index_placeholder_para;
     page_data *first_index_page;
 
-    init_std_fonts();
+    init_std_fonts(psd);
     fontlist = snew(font_list);
     fontlist->head = fontlist->tail = NULL;
 
-    ourconf = paper_configure(sourceform, fontlist, es);
+    ourconf = paper_configure(sourceform, fontlist, psd, es);
     conf = &ourconf;
 
     /*
@@ -1060,6 +1079,7 @@ void *paper_pre_backend(paragraph *sourceform, keywordlist *keywords,
     doc->pages = pages;
     doc->paper_width = conf->paper_width;
     doc->paper_height = conf->paper_height;
+    doc->psd = psd;
 
     /*
      * Collect the section heading paragraphs into a document
@@ -1480,15 +1500,16 @@ static int utoglyph(font_info const *fi, wchar_t u) {
     return (u < 0 || u > 0xFFFF ? NOGLYPH : fi->bmp[u]);
 }
 
-void listfonts(void) {
+void listfonts(psdata *psd) {
     font_info const *fi;
 
-    init_std_fonts();
-    for (fi = all_fonts; fi; fi = fi->next)
+    init_std_fonts(psd);
+    for (fi = psd->all_fonts; fi; fi = fi->next)
 	printf("%s\n", fi->name);
 }
 
-static font_data *make_std_font(font_list *fontlist, char const *name)
+static font_data *make_std_font(font_list *fontlist, psdata *psd,
+                                const char *name)
 {
     font_info const *fi;
     font_data *f;
@@ -1499,7 +1520,7 @@ static font_data *make_std_font(font_list *fontlist, char const *name)
 	if (strcmp(fe->font->info->name, name) == 0)
 	    return fe->font;
 
-    for (fi = all_fonts; fi; fi = fi->next)
+    for (fi = psd->all_fonts; fi; fi = fi->next)
 	if (strcmp(fi->name, name) == 0) break;
     if (!fi) return NULL;
 

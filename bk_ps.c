@@ -205,7 +205,7 @@ void ps_backend(paragraph *sourceform, keywordlist *keywords,
 	    if (fe->font->info->filetype == TYPE1)
 		pf_writeps(fe->font->info, fp);
 	    else
-		sfnt_writeps(fe->font->info, fp, es);
+		sfnt_writeps(fe->font->info, fp, doc->psd, es);
 	    fprintf(fp, "%%%%EndResource\n");
 	} else {
 	    fprintf(fp, "%%%%IncludeResource: font %s\n",
@@ -229,7 +229,7 @@ void ps_backend(paragraph *sourceform, keywordlist *keywords,
 	ps_token(fp, &cc, "{1 index /FID ne {def} {pop pop} ifelse} forall\n");
 	ps_token(fp, &cc, "/Encoding [\n");
 	for (i = 0; i < 256; i++)
-	    ps_token(fp, &cc, "/%s", glyph_extern(fe->vector[i]));
+	    ps_token(fp, &cc, "/%s", glyph_extern(doc->psd, fe->vector[i]));
 	ps_token(fp, &cc, "] def\n");
 	ps_token(fp, &cc, "currentdict end\n");
 	ps_token(fp, &cc, "/fontname-%s exch definefont /%s exch def\n",

@@ -44,6 +44,7 @@ struct document_Tag {
     page_data *pages;
     outline_element *outline_elements;
     int n_outline_elements;
+    psdata *psd;
 };
 
 /*
@@ -77,8 +78,6 @@ struct ligature_Tag {
  * depend on the particular document.  It gets generated when the font's
  * metrics are read in.
  */
-
-extern font_info *all_fonts;
 
 struct font_info_Tag {
     font_info *next;
@@ -373,6 +372,13 @@ struct outline_element_Tag {
     para_data *pdata;
 };
 
+struct psdata_Tag {
+    char **extraglyphs;
+    glyph nextglyph;
+    tree234 *extrabyname;
+    font_info *all_fonts;
+};
+
 /*
  * Functions exported from bk_paper.c
  */
@@ -384,12 +390,14 @@ int find_width(font_data *, glyph);
 /*
  * Functions and data exported from psdata.c.
  */
-glyph glyph_intern(char const *);
-char const *glyph_extern(glyph);
+psdata *psdata_new(void);
+void psdata_free(psdata *);
+glyph glyph_intern(psdata *, const char *);
+char const *glyph_extern(psdata *, glyph);
 wchar_t ps_glyph_to_unicode(glyph);
 extern const char *const ps_std_glyphs[];
 extern glyph const tt_std_glyphs[];
-void init_std_fonts(void);
+void init_std_fonts(psdata *psd);
 const int *ps_std_font_widths(char const *fontname);
 const kern_pair *ps_std_font_kerns(char const *fontname);
 
@@ -423,7 +431,7 @@ typedef struct sfnt_Tag sfnt;
 glyph sfnt_indextoglyph(sfnt *sf, unsigned idx);
 unsigned sfnt_glyphtoindex(sfnt *sf, glyph g);
 unsigned sfnt_nglyphs(sfnt *sf);
-void sfnt_writeps(font_info const *fi, FILE *ofp, errorstate *es);
+void sfnt_writeps(font_info const *fi, FILE *ofp, psdata *psd, errorstate *es);
 void sfnt_data(font_info *fi, char **bufp, size_t *lenp);
 
 #endif

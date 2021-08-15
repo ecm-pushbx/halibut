@@ -1615,7 +1615,7 @@ const struct {
     char const *magic;
     size_t nmagic;
     bool binary;
-    void (*reader)(input *);
+    void (*reader)(input *, psdata *);
 } magics[] = {
     { "%!FontType1-",     12, false, &read_pfa_file },
     { "%!PS-AdobeFont-",  15, false, &read_pfa_file },
@@ -1625,14 +1625,14 @@ const struct {
     { "true",		   4, true,  &read_sfnt_file },
 };
 
-paragraph *read_input(input *in, indexdata *idx) {
+paragraph *read_input(input *in, indexdata *idx, psdata *psd) {
     paragraph *head = NULL;
     paragraph **hptr = &head;
     tree234 *macros;
     char mag[16];
     size_t len, i;
     bool binary;
-    void (*reader)(input *);
+    void (*reader)(input *, psdata *);
 
     macros = newtree234(macrocmp, NULL);
 
@@ -1684,7 +1684,7 @@ paragraph *read_input(input *in, indexdata *idx) {
 	    if (reader == NULL) {
 		read_file(&hptr, in, idx, macros);
 	    } else {
-		(*reader)(in);
+		(*reader)(in, psd);
 	    }
 	} else {
             err_cantopen(in->es, in->filenames[in->currindex]);

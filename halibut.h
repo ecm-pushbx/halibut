@@ -39,6 +39,7 @@ typedef struct indextag_Tag indextag;
 typedef struct indexentry_Tag indexentry;
 typedef struct macrostack_Tag macrostack;
 typedef struct errorstate_Tag errorstate;
+typedef struct psdata_Tag psdata;
 
 /*
  * Data structure to hold a file name and index, a line and a
@@ -468,23 +469,23 @@ paragraph *cmdline_cfg_simple(char *string, ...);
 /*
  * input.c
  */
-paragraph *read_input(input *in, indexdata *idx);
+paragraph *read_input(input *in, indexdata *idx, psdata *psd);
 
 /*
  * in_afm.c
  */
-void read_afm_file(input *in);
+void read_afm_file(input *in, psdata *psd);
 
 /*
  * in_pf.c
  */
-void read_pfa_file(input *in);
-void read_pfb_file(input *in);
+void read_pfa_file(input *in, psdata *psd);
+void read_pfb_file(input *in, psdata *psd);
 
 /*
  * in_sfnt.c
  */
-void read_sfnt_file(input *in);
+void read_sfnt_file(input *in, psdata *psd);
 
 /*
  * keywords.c
@@ -608,9 +609,9 @@ paragraph *info_config_filename(char *filename);
 /*
  * bk_paper.c
  */
-void *paper_pre_backend(paragraph *, keywordlist *, indexdata *,
+void *paper_pre_backend(paragraph *, keywordlist *, indexdata *, psdata *,
                         errorstate *);
-void listfonts(void);
+void listfonts(psdata *);
 
 /*
  * bk_ps.c

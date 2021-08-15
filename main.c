@@ -7,13 +7,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "halibut.h"
+#include "paper.h"
 
 static void dbg_prtsource(paragraph *sourceform);
 static void dbg_prtwordlist(int level, word *w);
 static void dbg_prtkws(keywordlist *kws);
 
 static const struct pre_backend {
-    void *(*func)(paragraph *, keywordlist *, indexdata *, errorstate *);
+    void *(*func)(paragraph *, keywordlist *, indexdata *, psdata *,
+                  errorstate *);
     int bitfield;
 } pre_backends[] = {
     {paper_pre_backend, 0x0001}
@@ -293,6 +295,7 @@ int main(int argc, char **argv) {
 	paragraph *sourceform, *p;
 	indexdata *idx;
 	keywordlist *keywords;
+        psdata *psd;
 
 	in.filenames = infiles;
 	in.nfiles = nfiles;
@@ -306,10 +309,11 @@ int main(int argc, char **argv) {
         in.es = es;
 
 	idx = make_index();
+        psd = psdata_new();
 
-	sourceform = read_input(&in, idx);
+	sourceform = read_input(&in, idx, psd);
 	if (list_fonts) {
-	    listfonts();
+	    listfonts(psd);
 	    exit(EXIT_SUCCESS);
 	}
 	if (es->fatal)
@@ -378,7 +382,7 @@ int main(int argc, char **argv) {
 	    if (prebackbits & pre_backends[k].bitfield) {
 		assert(k < (int)lenof(pre_backend_data));
 		pre_backend_data[k] =
-		    pre_backends[k].func(sourceform, keywords, idx, es);
+		    pre_backends[k].func(sourceform, keywords, idx, psd, es);
 	    }
 
 	/*
@@ -406,6 +410,7 @@ int main(int argc, char **argv) {
 	free_para_list(sourceform);
 	free_keywords(keywords);
 	cleanup_index(idx);
+        psdata_free(psd);
     }
 
     if (es->fatal)

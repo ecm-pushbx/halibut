@@ -520,11 +520,11 @@ static int glyphsbyname_cmp_search(void const *a, void const *b) {
 }
 
 /* Generate an name for a glyph that doesn't have one. */
-static glyph genglyph(unsigned idx) {
+static glyph genglyph(psdata *psd, unsigned idx) {
     char buf[11];
-    if (idx == 0) return glyph_intern(".notdef");
+    if (idx == 0) return glyph_intern(psd, ".notdef");
     sprintf(buf, "glyph%u", idx);
-    return glyph_intern(buf);
+    return glyph_intern(psd, buf);
 }
 
 /*
@@ -533,7 +533,7 @@ static glyph genglyph(unsigned idx) {
  * TODO: cope better with duplicated glyph names (usually .notdef)
  * TODO: when presented with format 3.0, try to use 'CFF' if present.
  */
-static void sfnt_mapglyphs(font_info *fi, errorstate *es) {
+static void sfnt_mapglyphs(font_info *fi, psdata *psd, errorstate *es) {
     sfnt *sf = fi->fontfile;
     t_post post;
     void *ptr, *end;
@@ -584,7 +584,7 @@ static void sfnt_mapglyphs(font_info *fi, errorstate *es) {
 		memcpy(tmp, sptr + 1, *sptr);
 		tmp[*sptr] = 0;
 		assert(i < nextras);
-		extraglyphs[i++] = glyph_intern(tmp);
+		extraglyphs[i++] = glyph_intern(psd, tmp);
 	    }
 	    sf->glyphsbyindex = snewn(sf->nglyphs, glyph);
 	    for (i = 0; i < sf->nglyphs; i++) {
@@ -595,7 +595,7 @@ static void sfnt_mapglyphs(font_info *fi, errorstate *es) {
 		    sf->glyphsbyindex[i] = extraglyphs[g - 258];
 		else {
 		    err_sfntbadtable(es, &sf->pos, "post");
-		    sf->glyphsbyindex[i] = genglyph(i);
+		    sf->glyphsbyindex[i] = genglyph(psd, i);
 		}
 	    }
 	    sfree(extraglyphs);
@@ -611,7 +611,7 @@ static void sfnt_mapglyphs(font_info *fi, errorstate *es) {
     if (!sf->glyphsbyindex) {
 	sf->glyphsbyindex = snewn(sf->nglyphs, glyph);
 	for (i = 0; i < sf->nglyphs; i++)
-	    sf->glyphsbyindex[i] = genglyph(i);
+	    sf->glyphsbyindex[i] = genglyph(psd, i);
     }
     /* Construct glyphsbyname */
     sf->glyphsbyname = snewn(sf->nglyphs, unsigned short);
@@ -633,7 +633,7 @@ static void sfnt_mapglyphs(font_info *fi, errorstate *es) {
     suflen = 4;
     for (i = 0; i < sf->nglyphs; i++) {
 	char const *p;
-	p = strrchr(glyph_extern(sfnt_indextoglyph(sf, i)), '.');
+	p = strrchr(glyph_extern(psd, sfnt_indextoglyph(sf, i)), '.');
 	if (p && !(p+1)[strspn(p+1, "0123456789")] && strlen(p+1) > suflen)
 	    suflen = strlen(p+1);
     }
@@ -643,12 +643,12 @@ static void sfnt_mapglyphs(font_info *fi, errorstate *es) {
 	if (prev == (this = sfnt_indextoglyph(sf, sf->glyphsbyname[i]))) {
 	    char const *basename;
 	    char *buf;
-	    basename = glyph_extern(this);
+	    basename = glyph_extern(psd, this);
 	    buf = snewn(strlen(basename) + 2 + suflen, char);
 	    strcpy(buf, basename);
 	    sprintf(buf + strlen(basename), ".%0*hu", suflen,
 		    sf->glyphsbyname[i]);
-	    sf->glyphsbyindex[sf->glyphsbyname[i]] = glyph_intern(buf);
+	    sf->glyphsbyindex[sf->glyphsbyname[i]] = glyph_intern(psd, buf);
 	    sfree(buf);
 	}
 	prev = this;
@@ -923,7 +923,7 @@ static void sfnt_getmap(font_info *fi, errorstate *es) {
     err_sfntbadtable(es, &sf->pos, "cmap");
 }
 
-void read_sfnt_file(input *in) {
+void read_sfnt_file(input *in, psdata *psd) {
     sfnt *sf = snew(sfnt);
     size_t off = 0, got;
     FILE *fp = in->currfp;
@@ -996,12 +996,12 @@ void read_sfnt_file(input *in) {
     sf->nglyphs = maxp.numGlyphs;
     fi->name = sfnt_psname(fi, in->es);
     if (fi->name == NULL) return;
-    sfnt_mapglyphs(fi, in->es);
+    sfnt_mapglyphs(fi, psd, in->es);
     sfnt_getmetrics(fi, in->es);
     sfnt_getkern(fi, in->es);
     sfnt_getmap(fi, in->es);
-    fi->next = all_fonts;
-    all_fonts = fi;
+    fi->next = psd->all_fonts;
+    psd->all_fonts = fi;
 }
 
 static int sizecmp(const void *a, const void *b) {
@@ -1016,7 +1016,7 @@ static int sizecmp(const void *a, const void *b) {
  * <http://partners.adobe.com/public/developer/en/font/5012.Type42_Spec.pdf>
  */
 
-void sfnt_writeps(font_info const *fi, FILE *ofp, errorstate *es) {
+void sfnt_writeps(font_info const *fi, FILE *ofp, psdata *psd, errorstate *es) {
     unsigned i, j, lastbreak;
     sfnt *sf = fi->fontfile;
     size_t *breaks, glyfoff, glyflen;
@@ -1053,7 +1053,7 @@ void sfnt_writeps(font_info const *fi, FILE *ofp, errorstate *es) {
     fprintf(ofp, "0 1 %u{currentfile token pop exch def}bind for\n",
 	sf->nglyphs - 1);
     for (i = 0; i < sf->nglyphs; i++)
-	ps_token(ofp, &cc, "/%s", glyph_extern(sfnt_indextoglyph(sf, i)));
+	ps_token(ofp, &cc, "/%s", glyph_extern(psd, sfnt_indextoglyph(sf, i)));
     fprintf(ofp, "\nend readonly def\n");
     fprintf(ofp, "/sfnts [<");
     breaks = snewn(sf->osd.numTables + sf->nglyphs, size_t);

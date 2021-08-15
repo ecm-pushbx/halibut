@@ -1121,34 +1121,67 @@ static const char *const ps_glyphs_alphabetic[] = {
     "zretroflexhook", "zstroke", "zuhiragana", "zukatakana", 
 };
 
-char const **extraglyphs = NULL;
-glyph nextglyph = lenof(ps_glyphs_alphabetic);
-tree234 *extrabyname = NULL;
+#define EXTRAGLYPHSOFFSET lenof(ps_glyphs_alphabetic)
 
-char const *glyph_extern(glyph glyph) {
+const char *glyph_extern(psdata *psd, glyph glyph) {
     if (glyph == NOGLYPH) return ".notdef";
-    if (glyph < lenof(ps_glyphs_alphabetic))
+    if (glyph < EXTRAGLYPHSOFFSET)
 	return ps_glyphs_alphabetic[glyph];
     else
-	return extraglyphs[glyph - lenof(ps_glyphs_alphabetic)];
+	return psd->extraglyphs[glyph - EXTRAGLYPHSOFFSET];
 }
 
 static int glyphcmp(const void *a, const void *b, void *cmpctx) {
+    psdata *psd = (psdata *)cmpctx;
     glyph ga = *(const glyph *)a, gb = *(const glyph *)b;
-    return strcmp(glyph_extern(ga), glyph_extern(gb));
+    return strcmp(glyph_extern(psd, ga), glyph_extern(psd, gb));
 }
 
 static int glyphcmp_search(const void *a, const void *b, void *cmpctx) {
+    psdata *psd = (psdata *)cmpctx;
     glyph gb = *(const glyph *)b;
-    return strcmp(a, glyph_extern(gb));
+    return strcmp(a, glyph_extern(psd, gb));
 }
 
-glyph glyph_intern(char const *glyphname) {
+psdata *psdata_new(void)
+{
+    psdata *psd = snew(psdata);
+    psd->extraglyphs = NULL;
+    psd->nextglyph = EXTRAGLYPHSOFFSET;
+    psd->extrabyname = newtree234(glyphcmp, NULL);
+    psd->all_fonts = NULL;
+    return psd;
+}
+
+void psdata_free(psdata *psd)
+{
+    glyph i, *gp;
+    while ((gp = delpos234(psd->extrabyname, 0)) != NULL)
+        sfree(gp);
+    freetree234(psd->extrabyname);
+    for (i = EXTRAGLYPHSOFFSET; i < psd->nextglyph; i++)
+        sfree(psd->extraglyphs[i - EXTRAGLYPHSOFFSET]);
+    sfree(psd->extraglyphs);
+    while (psd->all_fonts) {
+        font_info *fi = psd->all_fonts;
+        glyph_width *w;
+        psd->all_fonts = fi->next;
+        while ((w = delpos234(fi->widths, 0)) != NULL)
+            sfree(w);
+        freetree234(fi->widths);
+        freetree234(fi->kerns);
+        freetree234(fi->ligs);
+        sfree(fi);
+    }
+    sfree(psd);
+}
+
+glyph glyph_intern(psdata *psd, const char *glyphname) {
     int i, j, k, c;
     glyph *gp;
 
     i = -1;
-    j = lenof(ps_glyphs_alphabetic);
+    j = EXTRAGLYPHSOFFSET;
     while (j-i > 1) {
 	k = (i + j) / 2;
 	c = strcmp(glyphname, ps_glyphs_alphabetic[k]);
@@ -1161,19 +1194,17 @@ glyph glyph_intern(char const *glyphname) {
 	    i = k;
     }
     /* Non-standard glyph.  We may need to add it to our tree. */
-    if (extrabyname == NULL)
-	extrabyname = newtree234(glyphcmp, NULL);
-    gp = findcmp234(extrabyname, (const void *)glyphname,
-                    glyphcmp_search, NULL);
+    gp = findcmp234(psd->extrabyname, (const void *)glyphname,
+                    glyphcmp_search, psd);
     if (gp) {
 	k = *gp;
     } else {
-	extraglyphs = sresize(extraglyphs, nextglyph, char const *);
-	k = nextglyph++;
-	extraglyphs[k - lenof(ps_glyphs_alphabetic)] = dupstr(glyphname);
+	psd->extraglyphs = sresize(psd->extraglyphs, psd->nextglyph, char *);
+	k = psd->nextglyph++;
+	psd->extraglyphs[k - EXTRAGLYPHSOFFSET] = dupstr(glyphname);
 	gp = snew(glyph);
 	*gp = k;
-	add234(extrabyname, gp);
+	add234(psd->extrabyname, gp);
     }
     return k;
 }
@@ -4543,7 +4574,7 @@ static const struct ps_std_font_data {
     }},
 };
 
-void init_std_fonts(void) {
+void init_std_fonts(psdata *psd) {
     int i, j;
     ligature const *lig;
     kern_pair const *kern;
@@ -4561,7 +4592,7 @@ void init_std_fonts(void) {
 	for (j = 0; j < (int)lenof(ps_std_glyphs) - 1; j++) {
 	    glyph_width *w = snew(glyph_width);
 	    wchar_t ucs;
-	    w->glyph = glyph_intern(ps_std_glyphs[j]);
+	    w->glyph = glyph_intern(psd, ps_std_glyphs[j]);
 	    w->width = ps_std_fonts[i].widths[j];
 	    add234(fi->widths, w);
 	    ucs = ps_glyph_to_unicode(w->glyph);
@@ -4574,8 +4605,8 @@ void init_std_fonts(void) {
 	fi->ligs = newtree234(lig_cmp, NULL);
 	for (lig = ps_std_fonts[i].ligs; lig->left != NOGLYPH; lig++)
 	    add234(fi->ligs, (void *)lig);
-	fi->next = all_fonts;
-	all_fonts = fi;
+	fi->next = psd->all_fonts;
+	psd->all_fonts = fi;
     }
     done = true;
 }

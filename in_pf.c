@@ -42,7 +42,7 @@ typedef struct pfstate_Tag {
     size_t offset;
 } pfstate;
 
-static void pf_identify(t1_font *tf, errorstate *);
+static void pf_identify(t1_font *tf, psdata *, errorstate *);
 
 static t1_data *load_pfb_file(FILE *fp, filepos *pos) {
     t1_data *head = NULL, *tail = NULL;
@@ -95,24 +95,24 @@ static t1_data *load_pfa_file(FILE *fp, filepos *pos) {
     return ret;
 }
 
-void read_pfa_file(input *in) {
+void read_pfa_file(input *in, psdata *psd) {
     t1_font *tf = snew(t1_font);
 
     tf->data = load_pfa_file(in->currfp, &in->pos);
     tf->pos = in->pos;
     tf->length1 = tf->length2 = 0;
     fclose(in->currfp);
-    pf_identify(tf, in->es);
+    pf_identify(tf, psd, in->es);
 }
 
-void read_pfb_file(input *in) {
+void read_pfb_file(input *in, psdata *psd) {
     t1_font *tf = snew(t1_font);
 
     tf->data = load_pfb_file(in->currfp, &in->pos);
     tf->pos = in->pos;
     tf->length1 = tf->length2 = 0;
     fclose(in->currfp);
-    pf_identify(tf, in->es);
+    pf_identify(tf, psd, in->es);
 }
 static char *pf_read_token(pfstate *);
 
@@ -162,7 +162,7 @@ static size_t pf_tell(pfstate *pf) {
     return o + pf->offset;
 }
 
-static void pf_identify(t1_font *tf, errorstate *es) {
+static void pf_identify(t1_font *tf, psdata *psd, errorstate *es) {
     rdstringc rsc = { 0, 0, NULL };
     char *p;
     size_t len;
@@ -196,7 +196,7 @@ static void pf_identify(t1_font *tf, errorstate *es) {
     fontname[len] = 0;
     sfree(rsc.text);
 
-    for (fi = all_fonts; fi; fi = fi->next) {
+    for (fi = psd->all_fonts; fi; fi = fi->next) {
 	if (strcmp(fi->name, fontname) == 0) {
 	    fi->fontfile = tf;
 	    fi->filetype = TYPE1;

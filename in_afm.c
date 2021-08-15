@@ -48,7 +48,7 @@ static bool afm_require_key(char *line, char const *expected, input *in) {
     return false;
 }
 
-void read_afm_file(input *in) {
+void read_afm_file(input *in, psdata *psd) {
     char *line, *key, *val;
     font_info *fi;
     size_t i;
@@ -83,8 +83,8 @@ void read_afm_file(input *in) {
 	    goto giveup;
 	key = strtok(line, " \t");
 	if (strcmp(key, "EndFontMetrics") == 0) {
-	    fi->next = all_fonts;
-	    all_fonts = fi;
+	    fi->next = psd->all_fonts;
+	    psd->all_fonts = fi;
 	    fclose(in->currfp);
 	    return;
 	} else if (strcmp(key, "FontName") == 0) {
@@ -180,7 +180,7 @@ void read_afm_file(input *in) {
 			    err_afmval(in->es, &in->pos, key, 1);
 			    goto giveup;
 			}
-			g = glyph_intern(val);
+			g = glyph_intern(psd, val);
 		    } else if (strcmp(key, "L") == 0) {
 			glyph succ, lig;
 			if (!(val = strtok(NULL, " \t")) ||
@@ -188,13 +188,13 @@ void read_afm_file(input *in) {
 			    err_afmval(in->es, &in->pos, key, 1);
 			    goto giveup;
 			}
-			succ = glyph_intern(val);
+			succ = glyph_intern(psd, val);
 			if (!(val = strtok(NULL, " \t")) ||
 			    !strcmp(val, ";")) {
 			    err_afmval(in->es, &in->pos, key, 1);
 			    goto giveup;
 			}
-			lig = glyph_intern(val);
+			lig = glyph_intern(psd, val);
 			if (g != NOGLYPH && succ != NOGLYPH &&
 			    lig != NOGLYPH) {
 			    ligature *l = snew(ligature);
@@ -251,8 +251,8 @@ void read_afm_file(input *in) {
 			err_afmval(in->es, &in->pos, key, 3);
 			goto giveup;
 		    }
-		    l = glyph_intern(nl);
-		    r = glyph_intern(nr);
+		    l = glyph_intern(psd, nl);
+		    r = glyph_intern(psd, nr);
 		    if (l == -1 || r == -1) continue;
 		    kp = snew(kern_pair);
 		    kp->left = l;

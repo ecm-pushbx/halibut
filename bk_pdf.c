@@ -328,7 +328,7 @@ void pdf_backend(paragraph *sourceform, keywordlist *keywords,
 		    objtext(font, buf);
 		}
 		objtext(font, i % 8 ? "/" : "\n/");
-		objtext(font, glyph_extern(fe->vector[i]));
+		objtext(font, glyph_extern(doc->psd, fe->vector[i]));
 		prev = i;
 	    }
 
