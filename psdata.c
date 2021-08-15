@@ -1133,13 +1133,13 @@ char const *glyph_extern(glyph glyph) {
 	return extraglyphs[glyph - lenof(ps_glyphs_alphabetic)];
 }
 
-static int glyphcmp(void *a, void *b) {
-    glyph ga = *(glyph *)a, gb = *(glyph *)b;
+static int glyphcmp(const void *a, const void *b, void *cmpctx) {
+    glyph ga = *(const glyph *)a, gb = *(const glyph *)b;
     return strcmp(glyph_extern(ga), glyph_extern(gb));
 }
 
-static int glyphcmp_search(void *a, void *b) {
-    glyph gb = *(glyph *)b;
+static int glyphcmp_search(const void *a, const void *b, void *cmpctx) {
+    glyph gb = *(const glyph *)b;
     return strcmp(a, glyph_extern(gb));
 }
 
@@ -1162,8 +1162,9 @@ glyph glyph_intern(char const *glyphname) {
     }
     /* Non-standard glyph.  We may need to add it to our tree. */
     if (extrabyname == NULL)
-	extrabyname = newtree234(glyphcmp);
-    gp = find234(extrabyname, (void *)glyphname, glyphcmp_search);
+	extrabyname = newtree234(glyphcmp, NULL);
+    gp = findcmp234(extrabyname, (const void *)glyphname,
+                    glyphcmp_search, NULL);
     if (gp) {
 	k = *gp;
     } else {
@@ -4554,7 +4555,7 @@ void init_std_fonts(void) {
 	fi->fontfile = NULL;
 	fi->name = ps_std_fonts[i].name;
         fi->filetype = TYPE1;   /* for purposes of making subset fonts */
-	fi->widths = newtree234(width_cmp);
+	fi->widths = newtree234(width_cmp, NULL);
 	for (j = 0; j < (int)lenof(fi->bmp); j++)
 	    fi->bmp[j] = NOGLYPH;
 	for (j = 0; j < (int)lenof(ps_std_glyphs) - 1; j++) {
@@ -4567,10 +4568,10 @@ void init_std_fonts(void) {
 	    assert(ucs != 0xFFFF);
 	    fi->bmp[ucs] = w->glyph;
 	}
-	fi->kerns = newtree234(kern_cmp);
+	fi->kerns = newtree234(kern_cmp, NULL);
 	for (kern = ps_std_fonts[i].kerns; kern->left != NOGLYPH; kern++)
 	    add234(fi->kerns, (void *)kern);
-	fi->ligs = newtree234(lig_cmp);
+	fi->ligs = newtree234(lig_cmp, NULL);
 	for (lig = ps_std_fonts[i].ligs; lig->left != NOGLYPH; lig++)
 	    add234(fi->ligs, (void *)lig);
 	fi->next = all_fonts;

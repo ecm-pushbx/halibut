@@ -7,14 +7,14 @@
 #include <assert.h>
 #include "halibut.h"
 
-static int kwcmp(void *av, void *bv)
+static int kwcmp(const void *av, const void *bv, void *cmpctx)
 {
     const keyword *a = (const keyword *)av;
     const keyword *b = (const keyword *)bv;
     return ustrcmp(a->key, b->key);
 }
 
-static int kwfind(void *av, void *bv)
+static int kwfind(const void *av, const void *bv, void *cmpctx)
 {
     wchar_t *a = (wchar_t *)av;
     const keyword *b = (const keyword *)bv;
@@ -22,7 +22,7 @@ static int kwfind(void *av, void *bv)
 }
 
 keyword *kw_lookup(keywordlist *kl, wchar_t *str) {
-    return find234(kl->keys, str, kwfind);
+    return findcmp234(kl->keys, str, kwfind, NULL);
 }
 
 /*
@@ -40,7 +40,7 @@ keywordlist *get_keywords(paragraph *source, errorstate *es) {
     number_cfg(n, source);
 
     kl->size = 0;
-    kl->keys = newtree234(kwcmp);
+    kl->keys = newtree234(kwcmp, NULL);
     kl->nlooseends = kl->looseendssize = 0;
     kl->looseends = NULL;
     for (; source; source = source->next) {

@@ -55,10 +55,10 @@ void read_afm_file(input *in) {
 
     fi = snew(font_info);
     fi->name = NULL;
-    fi->widths = newtree234(width_cmp);
+    fi->widths = newtree234(width_cmp, NULL);
     fi->fontfile = NULL;
-    fi->kerns = newtree234(kern_cmp);
-    fi->ligs = newtree234(lig_cmp);
+    fi->kerns = newtree234(kern_cmp, NULL);
+    fi->ligs = newtree234(lig_cmp, NULL);
     fi->fontbbox[0] = fi->fontbbox[1] = fi->fontbbox[2] = fi->fontbbox[3] = 0;
     fi->capheight = fi->xheight = fi->ascent = fi->descent = 0;
     fi->stemh = fi->stemv = fi->italicangle = 0;

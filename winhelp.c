@@ -215,7 +215,7 @@ static int whlp_file_offset(struct file *f);
 
 /* The master index maps file names to help-file offsets. */
 
-static int filecmp(void *av, void *bv)
+static int filecmp(const void *av, const void *bv, void *cmpctx)
 {
     const struct file *a = (const struct file *)av;
     const struct file *b = (const struct file *)bv;
@@ -241,7 +241,7 @@ static int fileleaf(const void *av, unsigned char *outbuf)
 
 /* The |CONTEXT internal file maps help context hashes to TOPICOFFSETs. */
 
-static int ctxcmp(void *av, void *bv)
+static int ctxcmp(const void *av, const void *bv, void *cmpctx)
 {
     const context *a = (const context *)av;
     const context *b = (const context *)bv;
@@ -269,7 +269,7 @@ static int ctxleaf(const void *av, unsigned char *outbuf)
 
 /* The |TTLBTREE internal file maps TOPICOFFSETs to title strings. */
 
-static int ttlcmp(void *av, void *bv)
+static int ttlcmp(const void *av, const void *bv, void *cmpctx)
 {
     const context *a = (const context *)av;
     const context *b = (const context *)bv;
@@ -299,7 +299,7 @@ static int ttlleaf(const void *av, unsigned char *outbuf)
 
 /* The |KWBTREE internal file maps index strings to TOPICOFFSETs. */
 
-static int idxcmp(void *av, void *bv)
+static int idxcmp(const void *av, const void *bv, void *cmpctx)
 {
     const struct indexrec *a = (const struct indexrec *)av;
     const struct indexrec *b = (const struct indexrec *)bv;
@@ -337,7 +337,7 @@ static int idxleaf(const void *av, unsigned char *outbuf)
  * is by the low 16 bits of the number (above that is flags).
  */
 
-static int tabcmp(void *av, void *bv)
+static int tabcmp(const void *av, const void *bv, void *cmpctx)
 {
     const int *a = (const int *)av;
     const int *b = (const int *)bv;
@@ -349,7 +349,7 @@ static int tabcmp(void *av, void *bv)
 }
 
 /* The internal `fontnames' B-tree stores strings. */
-static int fontcmp(void *av, void *bv)
+static int fontcmp(const void *av, const void *bv, void *cmpctx)
 {
     const char *a = (const char *)av;
     const char *b = (const char *)bv;
@@ -1340,7 +1340,7 @@ static void whlp_make_fontsection(WHLP h, struct file *f)
 	int fontpos;
 	void *ret;
 
-	ret = findpos234(h->fontnames, fontdesc->font, NULL, &fontpos);
+	ret = findpos234(h->fontnames, fontdesc->font, &fontpos);
 	assert(ret != NULL);
 
 	whlp_file_add_char(f, fontdesc->rendition);
@@ -1711,15 +1711,15 @@ WHLP whlp_new(void)
     /*
      * Internal B-trees.
      */
-    ret->files = newtree234(filecmp);
-    ret->pre_contexts = newtree234(NULL);
-    ret->contexts = newtree234(ctxcmp);
-    ret->titles = newtree234(ttlcmp);
-    ret->text = newtree234(NULL);
-    ret->index = newtree234(idxcmp);
-    ret->tabstops = newtree234(tabcmp);
-    ret->fontnames = newtree234(fontcmp);
-    ret->fontdescs = newtree234(NULL);
+    ret->files = newtree234(filecmp, NULL);
+    ret->pre_contexts = newtree234(NULL, NULL);
+    ret->contexts = newtree234(ctxcmp, NULL);
+    ret->titles = newtree234(ttlcmp, NULL);
+    ret->text = newtree234(NULL, NULL);
+    ret->index = newtree234(idxcmp, NULL);
+    ret->tabstops = newtree234(tabcmp, NULL);
+    ret->fontnames = newtree234(fontcmp, NULL);
+    ret->fontdescs = newtree234(NULL, NULL);
 
     /*
      * Some standard files.

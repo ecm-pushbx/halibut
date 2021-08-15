@@ -47,6 +47,7 @@ typedef struct node234_Tag node234;
 struct tree234_Tag {
     node234 *root;
     cmpfn234 cmp;
+    void *cmpctx;
 };
 
 struct node234_Tag {
@@ -59,11 +60,12 @@ struct node234_Tag {
 /*
  * Create a 2-3-4 tree.
  */
-tree234 *newtree234(cmpfn234 cmp) {
+tree234 *newtree234(cmpfn234 cmp, void *cmpctx) {
     tree234 *ret = snew(tree234);
     LOG(("created tree %p\n", ret));
     ret->root = NULL;
     ret->cmp = cmp;
+    ret->cmpctx = cmpctx;
     return ret;
 }
 
@@ -361,15 +363,15 @@ static void *add234_internal(tree234 *t, void *e, int index) {
 		    return NULL;       /* error: index out of range */
 	    }
 	} else {
-	    if ((c = t->cmp(e, n->elems[0])) < 0)
+	    if ((c = t->cmp(e, n->elems[0], t->cmpctx)) < 0)
 		ki = 0;
 	    else if (c == 0)
 		return n->elems[0];	       /* already exists */
-	    else if (n->elems[1] == NULL || (c = t->cmp(e, n->elems[1])) < 0)
+	    else if (n->elems[1] == NULL || (c = t->cmp(e, n->elems[1], t->cmpctx)) < 0)
 		ki = 1;
 	    else if (c == 0)
 		return n->elems[1];	       /* already exists */
-	    else if (n->elems[2] == NULL || (c = t->cmp(e, n->elems[2])) < 0)
+	    else if (n->elems[2] == NULL || (c = t->cmp(e, n->elems[2], t->cmpctx)) < 0)
 		ki = 2;
 	    else if (c == 0)
 		return n->elems[2];	       /* already exists */
@@ -444,8 +446,8 @@ void *index234(tree234 *t, int index) {
  * as NULL, in which case the compare function from the tree proper
  * will be used.
  */
-void *findrelpos234(tree234 *t, void *e, cmpfn234 cmp,
-		    int relation, int *index) {
+void *findcmprelpos234(tree234 *t, const void *e, cmpfn234 cmp, void *cmpctx,
+                       int relation, int *index) {
     node234 *n;
     void *ret;
     int c;
@@ -453,9 +455,6 @@ void *findrelpos234(tree234 *t, void *e, cmpfn234 cmp,
 
     if (t->root == NULL)
 	return NULL;
-
-    if (cmp == NULL)
-	cmp = t->cmp;
 
     n = t->root;
     /*
@@ -477,7 +476,7 @@ void *findrelpos234(tree234 *t, void *e, cmpfn234 cmp,
     while (1) {
 	for (kcount = 0; kcount < 4; kcount++) {
 	    if (kcount >= 3 || n->elems[kcount] == NULL ||
-		(c = cmpret ? cmpret : cmp(e, n->elems[kcount])) < 0) {
+		(c = cmpret ? cmpret : cmp(e, n->elems[kcount], cmpctx)) < 0) {
 		break;
 	    }
 	    if (n->kids[kcount]) idx += n->counts[kcount];
@@ -548,14 +547,28 @@ void *findrelpos234(tree234 *t, void *e, cmpfn234 cmp,
     if (ret && index) *index = idx;
     return ret;
 }
-void *find234(tree234 *t, void *e, cmpfn234 cmp) {
-    return findrelpos234(t, e, cmp, REL234_EQ, NULL);
+void *findcmp234(tree234 *t, const void *e, cmpfn234 cmp, void *cmpctx) {
+    return findcmprelpos234(t, e, cmp, cmpctx, REL234_EQ, NULL);
 }
-void *findrel234(tree234 *t, void *e, cmpfn234 cmp, int relation) {
-    return findrelpos234(t, e, cmp, relation, NULL);
+void *findcmprel234(tree234 *t, const void *e, cmpfn234 cmp, void *cmpctx,
+                    int relation) {
+    return findcmprelpos234(t, e, cmp, cmpctx, relation, NULL);
 }
-void *findpos234(tree234 *t, void *e, cmpfn234 cmp, int *index) {
-    return findrelpos234(t, e, cmp, REL234_EQ, index);
+void *findcmppos234(tree234 *t, const void *e, cmpfn234 cmp, void *cmpctx,
+                    int *index) {
+    return findcmprelpos234(t, e, cmp, cmpctx, REL234_EQ, index);
+}
+void *find234(tree234 *t, const void *e) {
+    return findcmprelpos234(t, e, t->cmp, t->cmpctx, REL234_EQ, NULL);
+}
+void *findrel234(tree234 *t, const void *e, int relation) {
+    return findcmprelpos234(t, e, t->cmp, t->cmpctx, relation, NULL);
+}
+void *findpos234(tree234 *t, const void *e, int *index) {
+    return findcmprelpos234(t, e, t->cmp, t->cmpctx, REL234_EQ, index);
+}
+void *findrelpos234(tree234 *t, const void *e, int relation, int *index) {
+    return findcmprelpos234(t, e, t->cmp, t->cmpctx, relation, index);
 }
 
 /*
@@ -1006,7 +1019,7 @@ void *delpos234(tree234 *t, int index) {
 }
 void *del234(tree234 *t, void *e) {
     int index;
-    if (!findrelpos234(t, e, NULL, REL234_EQ, &index))
+    if (!findrelpos234(t, e, REL234_EQ, &index))
 	return NULL;		       /* it wasn't in there anyway */
     return delpos234_internal(t, index); /* it's there; delete it. */
 }
@@ -1121,7 +1134,7 @@ tree234 *join234(tree234 *t1, tree234 *t2) {
 
 	if (t1->cmp) {
 	    element = index234(t2, 0);
-	    element = findrelpos234(t1, element, NULL, REL234_GE, NULL);
+	    element = findrelpos234(t1, element, REL234_GE, NULL);
 	    if (element)
 		return NULL;
 	}
@@ -1141,7 +1154,7 @@ tree234 *join234r(tree234 *t1, tree234 *t2) {
 
 	if (t2->cmp) {
 	    element = index234(t1, size1-1);
-	    element = findrelpos234(t2, element, NULL, REL234_LE, NULL);
+	    element = findrelpos234(t2, element, REL234_LE, NULL);
 	    if (element)
 		return NULL;
 	}
@@ -1380,7 +1393,7 @@ tree234 *splitpos234(tree234 *t, int index, bool before) {
     count = countnode234(t->root);
     if (index < 0 || index > count)
 	return NULL;		       /* error */
-    ret = newtree234(t->cmp);
+    ret = newtree234(t->cmp, NULL);
     n = split234_internal(t, index);
     if (before) {
 	/* We want to return the ones before the index. */
@@ -1395,7 +1408,8 @@ tree234 *splitpos234(tree234 *t, int index, bool before) {
     }
     return ret;
 }
-tree234 *split234(tree234 *t, void *e, cmpfn234 cmp, int rel) {
+tree234 *splitcmp234(tree234 *t, const void *e, cmpfn234 cmp, void *cmpctx,
+                     int rel) {
     int before;
     int index;
 
@@ -1407,10 +1421,14 @@ tree234 *split234(tree234 *t, void *e, cmpfn234 cmp, int rel) {
     } else {
 	before = 0;
     }
-    if (!findrelpos234(t, e, cmp, rel, &index))
+    if (!findcmprelpos234(t, e, cmp, cmpctx, rel, &index))
 	index = 0;
 
     return splitpos234(t, index+1, before);
+}
+tree234 *split234(tree234 *t, const void *e, int rel)
+{
+    return splitcmp234(t, e, t->cmp, t->cmpctx, rel);
 }
 
 static node234 *copynode234(node234 *n, copyfn234 copyfn, void *copyfnstate) {
@@ -1439,7 +1457,7 @@ static node234 *copynode234(node234 *n, copyfn234 copyfn, void *copyfnstate) {
 tree234 *copytree234(tree234 *t, copyfn234 copyfn, void *copyfnstate) {
     tree234 *t2;
 
-    t2 = newtree234(t->cmp);
+    t2 = newtree234(t->cmp, t->cmpctx);
     if (t->root) {
 	t2->root = copynode234(t->root, copyfn, copyfnstate);
 	t2->root->parent = NULL;
@@ -1707,7 +1725,7 @@ int chknode(chkctx *ctx, int level, node234 *node,
 	for (i = -1; i < nelems; i++) {
 	    void *lower = (i == -1 ? lowbound : node->elems[i]);
 	    void *higher = (i+1 == nelems ? highbound : node->elems[i+1]);
-	    if (lower && higher && cmp(lower, higher) >= 0) {
+	    if (lower && higher && cmp(lower, higher, cmpctx) >= 0) {
 		error("node %p: kid comparison [%d=%s,%d=%s] failed",
 		      node, i, lower, i+1, higher);
 	    }
@@ -1817,9 +1835,9 @@ void addtest(void *elem) {
     realret = add234(tree, elem);
 
     i = 0;
-    while (i < arraylen && cmp(elem, array[i]) > 0)
+    while (i < arraylen && cmp(elem, array[i], NULL) > 0)
         i++;
-    if (i < arraylen && !cmp(elem, array[i])) {
+    if (i < arraylen && !cmp(elem, array[i], NULL)) {
         void *retval = array[i];       /* expect that returned not elem */
 	if (realret != retval) {
 	    error("add: retval was %p expected %p", realret, retval);
@@ -1863,9 +1881,9 @@ void deltest(void *elem) {
     int i;
 
     i = 0;
-    while (i < arraylen && cmp(elem, array[i]) > 0)
+    while (i < arraylen && cmp(elem, array[i], NULL) > 0)
         i++;
-    if (i >= arraylen || cmp(elem, array[i]) != 0)
+    if (i >= arraylen || cmp(elem, array[i], NULL) != 0)
         return;                        /* don't do it! */
     delpostest(i);
 }
@@ -1884,7 +1902,7 @@ int randomnumber(unsigned *seed) {
     return ((*seed) / 65536) % 32768;
 }
 
-int mycmp(void *av, void *bv) {
+int mycmp(const void *av, const void *bv, void *cmpctx) {
     char const *a = (char const *)av;
     char const *b = (char const *)bv;
     return strcmp(a, b);
@@ -2143,7 +2161,7 @@ int main(void) {
     tree2 = newtree234(mycmp);
     tree3 = newtree234(mycmp);
     tree4 = newtree234(mycmp);
-    assert(mycmp(strings[0], strings[1]) < 0);   /* just in case :-) */
+    assert(mycmp(strings[0], strings[1], NULL) < 0);   /* just in case :-) */
     add234(tree2, strings[1]);
     add234(tree4, strings[0]);
     array[0] = strings[0];

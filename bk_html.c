@@ -268,10 +268,10 @@ void ho_finish(htmloutput *ho)
 #define HO_HACK_QUOTENOTHING 2
 #define HO_HACK_OMITQUOTES 4
 
-static int html_fragment_compare(void *av, void *bv)
+static int html_fragment_compare(const void *av, const void *bv, void *cmpctx)
 {
-    htmlfragment *a = (htmlfragment *)av;
-    htmlfragment *b = (htmlfragment *)bv;
+    const htmlfragment *a = (const htmlfragment *)av;
+    const htmlfragment *b = (const htmlfragment *)bv;
     int cmp;
 
     if ((cmp = strcmp(a->file->filename, b->file->filename)) != 0)
@@ -280,10 +280,10 @@ static int html_fragment_compare(void *av, void *bv)
 	return strcmp(a->fragment, b->fragment);
 }
 
-static int html_filename_compare(void *av, void *bv)
+static int html_filename_compare(const void *av, const void *bv, void *cmpctx)
 {
-    char *a = (char *)av;
-    char *b = (char *)bv;
+    const char *a = (const char *)av;
+    const char *b = (const char *)bv;
 
     return strcmp(a, b);
 }
@@ -783,8 +783,8 @@ static void html_backend_common(paragraph *sourceform, keywordlist *keywords,
     for (p = sourceform; p; p = p->next)
 	p->private_data = NULL;
 
-    files.frags = newtree234(html_fragment_compare);
-    files.files = newtree234(html_filename_compare);
+    files.frags = newtree234(html_fragment_compare, NULL);
+    files.files = newtree234(html_filename_compare, NULL);
 
     /*
      * Start by figuring out into which file each piece of the
@@ -3154,7 +3154,7 @@ static char *html_sanitise_filename(htmlfilelist *files, char *text)
 
 	p = NULL;
 
-	while (find234(files->files, text, NULL)) {
+	while (find234(files->files, text)) {
 	    if (!p) {
 		len = strlen(text);
 		p = text;

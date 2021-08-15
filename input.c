@@ -39,7 +39,7 @@ struct macrostack_Tag {
     int ptr, npushback;
     filepos pos;
 };
-static int macrocmp(void *av, void *bv) {
+static int macrocmp(const void *av, const void *bv, void *cmpctx) {
     macro *a = (macro *)av, *b = (macro *)bv;
     return ustrcmp(a->name, b->name);
 }
@@ -58,7 +58,7 @@ static bool macrolookup(tree234 *macros, input *in, wchar_t *name,
                         filepos *pos) {
     macro m, *gotit;
     m.name = name;
-    gotit = find234(macros, &m, NULL);
+    gotit = find234(macros, &m);
     if (gotit) {
 	macrostack *expansion = snew(macrostack);
 	expansion->next = in->stack;
@@ -1634,7 +1634,7 @@ paragraph *read_input(input *in, indexdata *idx) {
     bool binary;
     void (*reader)(input *);
 
-    macros = newtree234(macrocmp);
+    macros = newtree234(macrocmp, NULL);
 
     while (in->currindex < in->nfiles) {
 	setpos(in, in->filenames[in->currindex]);

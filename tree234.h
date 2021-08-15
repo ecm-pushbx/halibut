@@ -35,7 +35,7 @@
  */
 typedef struct tree234_Tag tree234;
 
-typedef int (*cmpfn234)(void *, void *);
+typedef int (*cmpfn234)(const void *av, const void *bv, void *cmpctx);
 
 typedef void *(*copyfn234)(void *state, void *element);
 
@@ -44,7 +44,7 @@ typedef void *(*copyfn234)(void *state, void *element);
  * lookups by key will fail: you can only look things up by numeric
  * index, and you have to use addpos234() and delpos234().
  */
-tree234 *newtree234(cmpfn234 cmp);
+tree234 *newtree234(cmpfn234 cmp, void *cmpctx);
 
 /*
  * Free a 2-3-4 tree (not including freeing the elements).
@@ -130,11 +130,17 @@ void *index234(tree234 *t, int index);
 enum {
     REL234_EQ, REL234_LT, REL234_LE, REL234_GT, REL234_GE
 };
-void *find234(tree234 *t, void *e, cmpfn234 cmp);
-void *findrel234(tree234 *t, void *e, cmpfn234 cmp, int relation);
-void *findpos234(tree234 *t, void *e, cmpfn234 cmp, int *index);
-void *findrelpos234(tree234 *t, void *e, cmpfn234 cmp, int relation,
-		    int *index);
+void *find234(tree234 *t, const void *e);
+void *findrel234(tree234 *t, const void *e, int relation);
+void *findpos234(tree234 *t, const void *e, int *index);
+void *findrelpos234(tree234 *t, const void *e, int relation, int *index);
+void *findcmp234(tree234 *t, const void *e, cmpfn234 cmp, void *cmpctx);
+void *findcmprel234(tree234 *t, const void *e, cmpfn234 cmp, void *cmpctx,
+                 int relation);
+void *findcmppos234(tree234 *t, const void *e, cmpfn234 cmp, void *cmpctx,
+                 int *index);
+void *findcmprelpos234(tree234 *t, const void *e, cmpfn234 cmp, void *cmpctx,
+                       int relation, int *index);
 
 /*
  * Delete an element e in a 2-3-4 tree. Does not free the element,
@@ -175,7 +181,9 @@ int count234(tree234 *t);
  * remainder are left.
  */
 tree234 *splitpos234(tree234 *t, int index, bool before);
-tree234 *split234(tree234 *t, void *e, cmpfn234 cmp, int rel);
+tree234 *split234(tree234 *t, const void *e, int rel);
+tree234 *splitcmp234(tree234 *t, const void *e, cmpfn234 cmp, void *cmpctx,
+                     int rel);
 
 /*
  * Join two tree234s together into a single one.

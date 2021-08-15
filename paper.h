@@ -376,9 +376,9 @@ struct outline_element_Tag {
 /*
  * Functions exported from bk_paper.c
  */
-int width_cmp(void *, void *); /* use when setting up widths */
-int kern_cmp(void *, void *); /* use when setting up kern_pairs */
-int lig_cmp(void *, void *); /* use when setting up ligatures */
+int width_cmp(const void *, const void *, void *); /* use when setting up widths */
+int kern_cmp(const void *, const void *, void *); /* use when setting up kern_pairs */
+int lig_cmp(const void *, const void *, void *); /* use when setting up ligatures */
 int find_width(font_data *, glyph);
 
 /*

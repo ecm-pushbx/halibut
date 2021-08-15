@@ -173,7 +173,7 @@ static int strcmp_chm(const char *a, const char *b)
     return 0;
 }
 
-int chm_directory_entry_cmp(void *av, void *bv)
+int chm_directory_entry_cmp(const void *av, const void *bv, void *cmpctx)
 {
     const struct chm_directory_entry
         *a = (const struct chm_directory_entry *)av,
@@ -181,7 +181,7 @@ int chm_directory_entry_cmp(void *av, void *bv)
     return strcmp_chm(a->filename, b->filename);
 }
 
-int chm_directory_entry_find(void *av, void *bv)
+int chm_directory_entry_find(const void *av, const void *bv, void *cmpctx)
 {
     const char *a = (const char *)av;
     const struct chm_directory_entry
@@ -235,7 +235,7 @@ static void directory(rdstringc *rs, tree234 *files)
     PUT_32BIT_LSB_FIRST(rs->text + dirhdr_size_field, rs->pos);
     PUT_32BIT_LSB_FIRST(rs->text + dirhdr_size2_field, rs->pos);
 
-    index = newtree234(NULL);
+    index = newtree234(NULL, NULL);
     curr_chunk = 0;
     depth = 1;
     /* Write out lowest-level PMGL chunks full of actual directory entries */
@@ -345,7 +345,7 @@ static void directory(rdstringc *rs, tree234 *files)
         int index_index = 0;
 
         prev_index = index;
-        index = newtree234(NULL);
+        index = newtree234(NULL, NULL);
         depth++;
 
         while (index_index < count234(prev_index)) {
@@ -509,7 +509,7 @@ struct chm_stringtab_entry {
     int strtab_offset;
 };
 
-static int chm_stringtab_cmp(void *av, void *bv)
+static int chm_stringtab_cmp(const void *av, const void *bv, void *cmpctx)
 {
     const struct chm_stringtab_entry
         *a = (const struct chm_stringtab_entry *)av,
@@ -518,7 +518,7 @@ static int chm_stringtab_cmp(void *av, void *bv)
                   b->chm->stringsfile.text + b->strtab_offset);
 }
 
-static int chm_stringtab_find(void *av, void *bv)
+static int chm_stringtab_find(const void *av, const void *bv, void *cmpctx)
 {
     const char *a = (const char *)av;
     const struct chm_stringtab_entry
@@ -534,8 +534,9 @@ int chm_intern_string(struct chm *chm, const char *string)
     if (!string)
         return 0;
 
-    if ((ent = (struct chm_stringtab_entry *)find234(
-             chm->stringtab, (void *)string, chm_stringtab_find)) == NULL) {
+    if ((ent = (struct chm_stringtab_entry *)findcmp234(
+             chm->stringtab, (void *)string, chm_stringtab_find, NULL)) ==
+        NULL) {
         ent = snew(struct chm_stringtab_entry);
         ent->chm = chm;
 
@@ -556,9 +557,9 @@ int chm_intern_string(struct chm *chm, const char *string)
 struct chm *chm_new(void)
 {
     struct chm *chm = snew(struct chm);
-    chm->files = newtree234(chm_directory_entry_cmp);
-    chm->windows = newtree234(NULL);
-    chm->stringtab = newtree234(chm_stringtab_cmp);
+    chm->files = newtree234(chm_directory_entry_cmp, NULL);
+    chm->windows = newtree234(NULL, NULL);
+    chm->stringtab = newtree234(chm_stringtab_cmp, NULL);
     chm->content0 = empty_rdstringc;
     chm->content1 = empty_rdstringc;
     chm->outfile = empty_rdstringc;
@@ -640,7 +641,8 @@ static void chm_add_file_internal(struct chm *chm, const char *name,
 static struct chm_directory_entry *chm_find_file(
     struct chm *chm, const char *name)
 {
-    return find234(chm->files, (void *)name, chm_directory_entry_find);
+    return findcmp234(chm->files, (const void *)name,
+                      chm_directory_entry_find, NULL);
 }
 
 static char *add_leading_slash(const char *str)
@@ -748,7 +750,7 @@ struct chm_urltbl_entry {
     int topics_offset_to_update;
 };
 
-int chm_urltbl_entry_cmp(void *av, void *bv)
+int chm_urltbl_entry_cmp(const void *av, const void *bv, void *cmpctx)
 {
     const struct chm_urltbl_entry
         *a = (const struct chm_urltbl_entry *)av,
@@ -979,7 +981,7 @@ const char *chm_build(struct chm *chm, int *outlen)
         tree234 *urltbl_pre;
         struct chm_urltbl_entry *urltbl_entry;
 
-        urltbl_pre = newtree234(chm_urltbl_entry_cmp);
+        urltbl_pre = newtree234(chm_urltbl_entry_cmp, NULL);
 
         rdaddc_rep(&tocidx, 0, 0x1000);
 

@@ -1392,10 +1392,10 @@ static subfont_map_entry *encode_glyph_at(glyph g, wchar_t u,
     return sme;
 }
 
-static int new_sfmap_cmp(void *a, void *b)
+static int new_sfmap_cmp(const void *a, const void *b, void *cmpctx)
 {
-    glyph ga = *(glyph *)a;
-    subfont_map_entry *sb = b;
+    const glyph ga = *(const glyph *)a;
+    const subfont_map_entry *sb = b;
     glyph gb = sb->subfont->vector[sb->position];
 
     if (ga < gb) return -1;
@@ -1408,7 +1408,7 @@ static subfont_map_entry *encode_glyph(glyph g, wchar_t u, font_data *font)
     subfont_map_entry *sme;
     int c;
 
-    sme = find234(font->subfont_map, &g, new_sfmap_cmp);
+    sme = findcmp234(font->subfont_map, &g, new_sfmap_cmp, NULL);
     if (sme) return sme;
 
     /*
@@ -1424,9 +1424,9 @@ static subfont_map_entry *encode_glyph(glyph g, wchar_t u, font_data *font)
     return encode_glyph_at(g, u, font->latest_subfont, c);
 }
 
-static int sfmap_cmp(void *a, void *b)
+static int sfmap_cmp(const void *a, const void *b, void *cmpctx)
 {
-    subfont_map_entry *sa = a, *sb = b;
+    const subfont_map_entry *sa = a, *sb = b;
     glyph ga = sa->subfont->vector[sa->position];
     glyph gb = sb->subfont->vector[sb->position];
 
@@ -1435,7 +1435,7 @@ static int sfmap_cmp(void *a, void *b)
     return 0;
 }
 
-int width_cmp(void *a, void *b)
+int width_cmp(const void *a, const void *b, void *cmpctx)
 {
     glyph_width const *wa = a, *wb = b;
 
@@ -1446,7 +1446,7 @@ int width_cmp(void *a, void *b)
     return 0;
 }
 
-int kern_cmp(void *a, void *b)
+int kern_cmp(const void *a, const void *b, void *cmpctx)
 {
     kern_pair const *ka = a, *kb = b;
 
@@ -1461,7 +1461,7 @@ int kern_cmp(void *a, void *b)
     return 0;
 }
 
-int lig_cmp(void *a, void *b)
+int lig_cmp(const void *a, const void *b, void *cmpctx)
 {
     ligature const *la = a, *lb = b;
 
@@ -1507,7 +1507,7 @@ static font_data *make_std_font(font_list *fontlist, char const *name)
 
     f->list = fontlist;
     f->info = fi;
-    f->subfont_map = newtree234(sfmap_cmp);
+    f->subfont_map = newtree234(sfmap_cmp, NULL);
 
     /*
      * Our first subfont will contain all of US-ASCII. This isn't
@@ -1536,7 +1536,7 @@ int find_width(font_data *font, glyph index)
     glyph_width const *w;
 
     wantw.glyph = index;
-    w = find234(font->info->widths, &wantw, NULL);
+    w = find234(font->info->widths, &wantw);
     if (!w) return 0;
     return w->width;
 }
@@ -1550,7 +1550,7 @@ static int find_kern(font_data *font, int lindex, int rindex)
 	return 0;
     wantkp.left = lindex;
     wantkp.right = rindex;
-    kp = find234(font->info->kerns, &wantkp, NULL);
+    kp = find234(font->info->kerns, &wantkp);
     if (kp == NULL)
 	return 0;
     return kp->kern;
@@ -1565,7 +1565,7 @@ static int find_lig(font_data *font, int lindex, int rindex)
 	return NOGLYPH;
     wantlig.left = lindex;
     wantlig.right = rindex;
-    lig = find234(font->info->ligs, &wantlig, NULL);
+    lig = find234(font->info->ligs, &wantlig);
     if (lig == NULL)
 	return NOGLYPH;
     return lig->lig;
