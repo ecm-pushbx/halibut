@@ -894,7 +894,7 @@ const char *chm_build(struct chm *chm, int *outlen)
 
     {
         rdstringc winfile = {0, 0, NULL};
-        int i, j, s;
+        int i, s;
         struct chm_window *win;
 
         RDADD_32BIT_LSB_FIRST(&winfile, count234(chm->windows));
@@ -974,7 +974,7 @@ const char *chm_build(struct chm *chm, int *outlen)
         rdstringc topics = {0, 0, NULL};
         rdstringc urltbl = {0, 0, NULL};
         rdstringc urlstr = {0, 0, NULL};
-        int i, index, s, n_tocidx_3;
+        int index, s, n_tocidx_3;
         struct chm_directory_entry *contentsfile = NULL, *indexfile = NULL;
         tree234 *urltbl_pre;
         struct chm_urltbl_entry *urltbl_entry;
