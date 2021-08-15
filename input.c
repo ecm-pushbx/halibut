@@ -1611,7 +1611,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
     stk_free(crossparastk);
 }
 
-struct {
+const struct {
     char const *magic;
     size_t nmagic;
     bool binary;

@@ -86,7 +86,7 @@ static void decode_end(void *src, void *dest) {
 }
 #define d_end decode_end, 0, 0
 
-static void *decode(sfnt_decode *dec, void *src, void *end, void *dest) {
+static void *decode(const sfnt_decode *dec, void *src, void *end, void *dest) {
     while (dec->decoder != decode_end) {
 	if ((char *)src + dec->src_len > (char *)end) return NULL;
 	dec->decoder(src, (char *)dest + dec->dest_offset);
@@ -96,7 +96,7 @@ static void *decode(sfnt_decode *dec, void *src, void *end, void *dest) {
     return src;
 }
 
-static void *decoden(sfnt_decode *dec, void *src, void *end, void *dest,
+static void *decoden(const sfnt_decode *dec, void *src, void *end, void *dest,
 		     size_t size, size_t n) {
     while (n-- && src) {
 	src = decode(dec, src, end, dest);
@@ -106,9 +106,9 @@ static void *decoden(sfnt_decode *dec, void *src, void *end, void *dest,
 }
 
 /* Decoding specs for simple data types */
-sfnt_decode uint16_decode[] = { { d_uint16, 0 }, { d_end } };
-sfnt_decode int16_decode[]  = { { d_int16,  0 }, { d_end } };
-sfnt_decode uint32_decode[] = { { d_uint32, 0 }, { d_end } };
+const sfnt_decode uint16_decode[] = { { d_uint16, 0 }, { d_end } };
+const sfnt_decode int16_decode[]  = { { d_int16,  0 }, { d_end } };
+const sfnt_decode uint32_decode[] = { { d_uint32, 0 }, { d_end } };
 
 /* Offset subdirectory -- the start of the file */
 typedef struct offsubdir_Tag offsubdir;
@@ -116,7 +116,7 @@ struct offsubdir_Tag {
     unsigned scaler_type;
     unsigned numTables;
 };
-sfnt_decode offsubdir_decode[] = {
+const sfnt_decode offsubdir_decode[] = {
     { d_uint32,	offsetof(offsubdir, scaler_type) },
     { d_uint16, offsetof(offsubdir, numTables) },
     { d_skip(6) },
@@ -145,7 +145,7 @@ struct tabledir_Tag {
     unsigned offset;
     unsigned length;
 };
-sfnt_decode tabledir_decode[] = {
+const sfnt_decode tabledir_decode[] = {
     { d_uint32,	offsetof(tabledir, tag) },
     { d_uint32, offsetof(tabledir, checkSum) },
     { d_uint32, offsetof(tabledir, offset) },
@@ -160,7 +160,7 @@ struct t_OS_2_Tag {
     int sTypoAscender, sTypoDescender;
     int sxHeight, sCapHeight;
 };
-sfnt_decode t_OS_2_v0_decode[] = {
+const sfnt_decode t_OS_2_v0_decode[] = {
     { d_uint16, offsetof(t_OS_2, version) },
     { d_skip(66) }, /* xAvgCharWidth, usWeightClass, usWidthClass, fsType, */
     /* ySubscriptXSize, ySubscriptYSize, ySubscriptXOffset, */
@@ -170,7 +170,7 @@ sfnt_decode t_OS_2_v0_decode[] = {
     /* achVendID, fsSelection, usFirstCharIndex, usLastCharIndex */
     { d_end }
 };
-sfnt_decode t_OS_2_v1_decode[] = {
+const sfnt_decode t_OS_2_v1_decode[] = {
     { d_uint16, offsetof(t_OS_2, version) },
     { d_skip(66) }, /* xAvgCharWidth, usWeightClass, usWidthClass, fsType, */
     /* ySubscriptXSize, ySubscriptYSize, ySubscriptXOffset, */
@@ -184,7 +184,7 @@ sfnt_decode t_OS_2_v1_decode[] = {
     /* ulCodePageRange1, ulCodePageRange2 */
     { d_end }
 };
-sfnt_decode t_OS_2_v2_decode[] = {
+const sfnt_decode t_OS_2_v2_decode[] = {
     { d_uint16, offsetof(t_OS_2, version) },
     { d_skip(66) }, /* xAvgCharWidth, usWeightClass, usWidthClass, fsType, */
     /* ySubscriptXSize, ySubscriptYSize, ySubscriptXOffset, */
@@ -207,7 +207,7 @@ typedef struct t_cmap_Tag t_cmap;
 struct t_cmap_Tag {
     unsigned numTables;
 };
-sfnt_decode t_cmap_decode[] = {
+const sfnt_decode t_cmap_decode[] = {
     { d_skip(2) },
     { d_uint16, offsetof(t_cmap, numTables) },
     { d_end }
@@ -218,7 +218,7 @@ struct encodingrec_Tag {
     unsigned encodingID;
     unsigned offset;
 };
-sfnt_decode encodingrec_decode[] = {
+const sfnt_decode encodingrec_decode[] = {
     { d_uint16, offsetof(encodingrec, platformID) },
     { d_uint16, offsetof(encodingrec, encodingID) },
     { d_uint32, offsetof(encodingrec, offset) },
@@ -229,7 +229,7 @@ struct cmap4_Tag {
     unsigned length;
     unsigned segCountX2;
 };
-sfnt_decode cmap4_decode[] = {
+const sfnt_decode cmap4_decode[] = {
     { d_skip(2) }, /* format */
     { d_uint16, offsetof(cmap4, length) },
     { d_skip(2) }, /* language */
@@ -248,7 +248,7 @@ struct t_head_Tag {
     int xMin, yMin, xMax, yMax;
     int indexToLocFormat;
 };
-sfnt_decode t_head_decode[] = {
+const sfnt_decode t_head_decode[] = {
     { d_uint32, offsetof(t_head, version) },
     { d_uint32, offsetof(t_head, fontRevision) },
     { d_skip(8) }, /* checkSumAdjustment, magicNumber, flags */
@@ -275,7 +275,7 @@ struct t_hhea_Tag {
     int metricDataFormat;
     unsigned numOfLongHorMetrics;
 };
-sfnt_decode t_hhea_decode[] = {
+const sfnt_decode t_hhea_decode[] = {
     { d_uint32, offsetof(t_hhea, version) },
     { d_int16,	offsetof(t_hhea, ascent) },
     { d_int16,	offsetof(t_hhea, descent) },
@@ -287,7 +287,7 @@ sfnt_decode t_hhea_decode[] = {
 };
 
 /* Horizontal Metrics ('hmtx') table */
-sfnt_decode longhormetric_decode[] = {
+const sfnt_decode longhormetric_decode[] = {
     { d_uint16, 0 },
     { d_skip(2) },
     { d_end }
@@ -299,7 +299,7 @@ struct t_kern_Tag {
     unsigned version;
     unsigned nTables;
 };
-sfnt_decode t_kern_v0_decode[] = {
+const sfnt_decode t_kern_v0_decode[] = {
     { d_uint16, offsetof(t_kern, version) },
     { d_uint16, offsetof(t_kern, nTables) },
     { d_end }
@@ -310,7 +310,7 @@ struct kern_v0_subhdr_Tag {
     unsigned length;
     unsigned coverage;
 };
-sfnt_decode kern_v0_subhdr_decode[] = {
+const sfnt_decode kern_v0_subhdr_decode[] = {
     { d_uint16, offsetof(kern_v0_subhdr, version) },
     { d_uint16, offsetof(kern_v0_subhdr, length) },
     { d_uint16, offsetof(kern_v0_subhdr, coverage) },
@@ -322,7 +322,7 @@ sfnt_decode kern_v0_subhdr_decode[] = {
 #define KERN_V0_OVERRIDE	0x0008
 #define KERN_V0_FORMAT		0xff00
 #define KERN_V0_FORMAT_0	0x0000
-sfnt_decode t_kern_v1_decode[] = {
+const sfnt_decode t_kern_v1_decode[] = {
     { d_uint32, offsetof(t_kern, version) },
     { d_uint32, offsetof(t_kern, nTables) },
     { d_end }
@@ -332,7 +332,7 @@ struct kern_v1_subhdr_Tag {
     unsigned length;
     unsigned coverage;
 };
-sfnt_decode kern_v1_subhdr_decode[] = {
+const sfnt_decode kern_v1_subhdr_decode[] = {
     { d_uint32, offsetof(kern_v1_subhdr, length) },
     { d_uint16, offsetof(kern_v1_subhdr, coverage) },
     { d_skip(2) }, /* tupleIndex */
@@ -347,7 +347,7 @@ typedef struct kern_f0_Tag kern_f0;
 struct kern_f0_Tag {
     unsigned nPairs;
 };
-sfnt_decode kern_f0_decode[] = {
+const sfnt_decode kern_f0_decode[] = {
     { d_uint16, offsetof(kern_f0, nPairs) },
     { d_skip(6) }, /* searchRange, entrySelector, rangeShift */
     { d_end }
@@ -358,7 +358,7 @@ struct kern_f0_pair_Tag {
     unsigned right;
     int value;
 };
-sfnt_decode kern_f0_pair_decode[] = {
+const sfnt_decode kern_f0_pair_decode[] = {
     { d_uint16, offsetof(kern_f0_pair, left) },
     { d_uint16, offsetof(kern_f0_pair, right) },
     { d_int16, offsetof(kern_f0_pair, value) },
@@ -371,7 +371,7 @@ struct t_maxp_Tag {
     unsigned version;
     unsigned numGlyphs;
 };
-sfnt_decode t_maxp_decode[] = {
+const sfnt_decode t_maxp_decode[] = {
     { d_uint32, offsetof(t_maxp, version) },
     { d_uint16, offsetof(t_maxp, numGlyphs) },
     { d_end }
@@ -386,7 +386,7 @@ struct t_name_Tag {
     unsigned stringOffset;
     namerecord *nameRecord;
 };
-sfnt_decode t_name_decode[] = {
+const sfnt_decode t_name_decode[] = {
     { d_uint16,	offsetof(t_name, format) },
     { d_uint16,	offsetof(t_name, count) },
     { d_uint16,	offsetof(t_name, stringOffset) },
@@ -400,7 +400,7 @@ struct namerecord_Tag {
     unsigned length;
     unsigned offset;
 };
-sfnt_decode namerecord_decode[] = {
+const sfnt_decode namerecord_decode[] = {
     { d_uint16, offsetof(namerecord, platformID) },
     { d_uint16, offsetof(namerecord, encodingID) },
     { d_uint16, offsetof(namerecord, languageID) },
@@ -421,7 +421,7 @@ struct t_post_Tag {
     unsigned minMemType42;
     unsigned maxMemType42;
 };
-sfnt_decode t_post_decode[] = {
+const sfnt_decode t_post_decode[] = {
     { d_uint32, offsetof(t_post, format) },
     { d_int32,  offsetof(t_post, italicAngle) },
     { d_int16,	offsetof(t_post, underlinePosition) },

@@ -20,7 +20,7 @@ static const struct pre_backend {
 };
 
 static const struct backend {
-    char *name;
+    const char *name;
     void (*func)(paragraph *, keywordlist *, indexdata *, void *,
                  errorstate *);
     paragraph *(*filename)(char *filename);
