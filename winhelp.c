@@ -1241,7 +1241,7 @@ static void whlp_standard_systemsection(struct file *f)
     whlp_file_add_short(f, 0x36C);     /* magic number */
     whlp_file_add_short(f, 33);	       /* minor version: HCW 4.00 Win95+ */
     whlp_file_add_short(f, 1);	       /* major version */
-    whlp_file_add_long(f, time(NULL)); /* generation date */
+    whlp_file_add_long(f, current_time()); /* generation date */
     whlp_file_add_short(f, 0);	       /* flags=0 means no compression */
 
     /*

@@ -1323,7 +1323,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 		    dtor(t), t = get_token(in);
 		    if (t.type != tok_lbrace) {
 			if (wd.type == word_Normal) {
-			    time_t thetime = time(NULL);
+			    time_t thetime = current_time();
 			    struct tm *broken = localtime(&thetime);
 			    already = true;
 			    wdtext = ustrftime(NULL, broken);
@@ -1342,7 +1342,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 				rdadds(&rs, t.text);
 			}
 			if (wd.type == word_Normal) {
-			    time_t thetime = time(NULL);
+			    time_t thetime = current_time();
 			    struct tm *broken = localtime(&thetime);
 			    wdtext = ustrftime(rs.text, broken);
 			    wd.type = style;

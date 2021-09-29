@@ -466,6 +466,8 @@ void cmdline_cfg_add(paragraph *cfg, char *string);
 paragraph *cmdline_cfg_new(void);
 paragraph *cmdline_cfg_simple(char *string, ...);
 
+time_t current_time(void);             /* use in place of time(NULL) */
+
 /*
  * input.c
  */
