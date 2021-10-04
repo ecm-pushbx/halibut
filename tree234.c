@@ -1191,6 +1191,7 @@ static node234 *split234_internal(tree234 *t, int index) {
 	t->root = NULL;
 	return ret;
     }
+    assert(n);
 
     /*
      * Search down the tree to find the split point.

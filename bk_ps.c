@@ -344,6 +344,8 @@ static void ps_comment(FILE *fp, char const *leader, word *words) {
 	  case word_Quote:
 	    text = dupstr("'");
 	    break;
+          default:
+            continue;
 	}
 
 	if (cc + strlen(text) > PS_MAXWIDTH)

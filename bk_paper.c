@@ -557,7 +557,7 @@ void *paper_pre_backend(paragraph *sourceform, keywordlist *keywords,
     bool has_index;
     int pagenum;
     paragraph index_placeholder_para;
-    page_data *first_index_page;
+    page_data *first_index_page = NULL;
 
     init_std_fonts(psd);
     fontlist = snew(font_list);
@@ -2351,7 +2351,7 @@ static int render_line(line_data *ldata, int left_x, int top_y,
 	    xr = NULL;
 
 	{
-	    int extra_indent, shortfall, spaces;
+	    int extra_indent = 0, shortfall = 0, spaces = 0;
 	    int just = ldata->pdata->justification;
 
 	    /*
@@ -2365,13 +2365,8 @@ static int render_line(line_data *ldata, int left_x, int top_y,
 	      case JUST:
 		shortfall = ldata->hshortfall;
 		spaces = ldata->nspaces;
-		extra_indent = 0;
-		break;
-	      case LEFT:
-		shortfall = spaces = extra_indent = 0;
 		break;
 	      case RIGHT:
-		shortfall = spaces = 0;
 		extra_indent = ldata->real_shortfall;
 		break;
 	    }
@@ -2410,6 +2405,7 @@ static void render_para(para_data *pdata, paper_conf *conf,
     cxref = NULL;
     cxref_page = NULL;
 
+    assert(pdata->first);
     for (ldata = pdata->first; ldata; ldata = ldata->next) {
 	/*
 	 * If this is a contents entry, we expect to have a single
@@ -2807,7 +2803,7 @@ static word *fake_end_ref(void)
 static word *prepare_contents_title(word *first, wchar_t *separator,
 				    word *second)
 {
-    word *ret;
+    word *ret = NULL;
     word **wptr, *w;
 
     wptr = &ret;

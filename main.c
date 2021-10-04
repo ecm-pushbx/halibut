@@ -375,6 +375,7 @@ int main(int argc, char **argv) {
 	 * Select and run the pre-backends.
 	 */
 	prebackbits = 0;
+        memset(pre_backend_data, 0, sizeof(pre_backend_data));
 	for (k = 0; k < (int)lenof(backends); k++)
 	    if (backendbits == 0 || (backendbits & backends[k].bitfield))
 		prebackbits |= backends[k].prebackend_bitfield;

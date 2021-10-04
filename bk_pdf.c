@@ -131,7 +131,7 @@ void pdf_backend(paragraph *sourceform, keywordlist *keywords,
 	char fname[40];
 	char buf[80];
 	int i, prev;
-	object *font, *fontdesc;
+	object *font, *fontdesc = NULL;
 	int flags;
 	font_info const *fi = fe->font->info;
 
@@ -301,8 +301,9 @@ void pdf_backend(paragraph *sourceform, keywordlist *keywords,
 	    objtext(cidfont, fe->font->info->name);
 	    objtext(cidfont, "\n/CIDSystemInfo<</Registry(Adobe)"
 		    "/Ordering(Identity)/Supplement 0>>\n");
-	    objtext(cidfont, "/FontDescriptor ");
-	    objref(cidfont, fontdesc);
+	    assert(fontdesc);  /* TrueType fonts are never standard */
+            objtext(cidfont, "/FontDescriptor ");
+            objref(cidfont, fontdesc);
 	    objtext(cidfont, "\n/W[0[");
 	    for (i = 0; i < (int)sfnt_nglyphs(fe->font->info->fontfile); i++) {
 		char buf[20];
@@ -830,10 +831,12 @@ static void make_pages_node(object *node, object *parent, page_data *first,
 	for (i = 0; i < TREE_BRANCH; i++) {
 	    int number = (i+1) * count / TREE_BRANCH - i * count / TREE_BRANCH;
 	    thisfirst = page;
+            thislast = NULL;
 	    while (number--) {
 		thislast = page;
 		page = page->next;
 	    }
+            assert(thislast);
 
 	    if (thisfirst == thislast) {
 		objref(node, (object *)thisfirst->spare);
@@ -1021,6 +1024,8 @@ static int pdf_versionid(FILE *fp, word *words)
 	  case word_Quote:
 	    text = dupstr("'");
 	    break;
+          default:
+            continue;
 	}
 
 	fputs(text, fp);

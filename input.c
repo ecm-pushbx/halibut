@@ -568,6 +568,7 @@ static word *addword(word newword, word ***hptrptr) {
     if (!hptrptr)
 	return NULL;
     mnewword = snew(word);
+    newword.private_data = NULL;       /* placate gcc warning */
     *mnewword = newword;	       /* structure copy */
     mnewword->next = NULL;
     **hptrptr = mnewword;
@@ -600,13 +601,12 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 		      tree234 *macros) {
     token t;
     paragraph par;
-    word wd, **whptr, **idximplicit;
+    word wd, **whptr, **idximplicit = NULL;
     wchar_t utext[2], *wdtext;
     int style, spcstyle;
     bool already;
     bool iswhite, seenwhite;
-    int type;
-    int prev_para_type;
+    int prev_para_type = para_NotParaType;
     struct stack_item {
 	enum {
 	    stack_nop = 0,	       /* do nothing (for error recovery) */
@@ -627,10 +627,10 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 	bool seen_lcont, seen_quote;
     };
     stack crossparastk;
-    word *indexword, *uword, *iword;
+    word *indexword = NULL, *uword, *iword;
     word *idxwordlist;
     rdstring indexstr;
-    bool index_downcase, index_visible, indexing;
+    bool index_downcase = false, index_visible = false, indexing;
     const rdstring nullrs = { 0, 0, NULL };
     wchar_t uchr;
 
@@ -692,6 +692,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 		wd.breaks = false;     /* shouldn't need this... */
 		wd.text = ustrdup(t.text);
 		wd.alt = NULL;
+                wd.aux = 0;
 		wd.fpos = t.pos;
 		addword(wd, &whptr);
 		dtor(t), t = get_token(in);
@@ -1250,8 +1251,8 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 		    }
 		    break;
 		  case c_q:
-                  case c_cq:
-                    type = t.cmd;
+                  case c_cq: {
+                    int type = t.cmd;
 		    dtor(t), t = get_token(in);
 		    if (t.type != tok_lbrace) {
 			err_explbr(in->es, &t.pos);
@@ -1301,6 +1302,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 			stk_push(parsestk, sitem);
 		    }
 		    break;
+                  }
 		  case c_K:
 		  case c_k:
 		  case c_W:
@@ -1396,8 +1398,8 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 				indexstr = nullrs;
 				/* Flags so that we do the Right
 				 * Things with text */
-				index_visible = (type != c_I);
-				index_downcase = (type == c_ii);
+				index_visible = (t.cmd != c_I);
+				index_downcase = (t.cmd == c_ii);
 				indexing = true;
 				idxwordlist = NULL;
 				idximplicit = &idxwordlist;
@@ -1435,8 +1437,8 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 		  case c_c:
 		  case c_cw:
 		  case c_e:
-		  case c_s:
-		    type = t.cmd;
+		  case c_s: {
+		    int type = t.cmd;
 		    if (style != word_Normal) {
 			err_nestedstyles(in->es, &t.pos);
 			/* Error recovery: eat lbrace, push nop. */
@@ -1461,10 +1463,11 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 			stk_push(parsestk, sitem);
 		    }
 		    break;
+                  }
 		  case c_i:
 		  case c_ii:
-		  case c_I:
-		    type = t.cmd;
+		  case c_I: {
+		    int type = t.cmd;
 		    if (indexing) {
 			err_nestedindex(in->es, &t.pos);
 			/* Error recovery: eat lbrace, push nop. */
@@ -1520,6 +1523,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 			stk_push(parsestk, sitem);
 		    }
 		    break;
+                  }
 		  case c_u:
 		    uchr = t.aux;
 		    utext[0] = uchr; utext[1] = 0;
@@ -1660,9 +1664,9 @@ paragraph *read_input(input *in, indexdata *idx, psdata *psd) {
 	     */
 	    in->currfp = fopen(in->filenames[in->currindex], "rb");
 	    binary = false; /* default to Halibut source, which is text */
+            reader = NULL;
 	    if (in->currfp) {
 		in->wantclose = true;
-		reader = NULL;
 		len = fread(mag, 1, sizeof(mag), in->currfp);
 		for (i = 0; i < lenof(magics); i++) {
 		    if (len >= magics[i].nmagic &&
