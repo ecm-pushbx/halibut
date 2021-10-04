@@ -1328,8 +1328,11 @@ static void whlp_make_fontsection(WHLP h, struct file *f)
      */
     for (i = 0; (fontname = index234(h->fontnames, i)) != NULL; i++) {
 	char data[32];
-	memset(data, i, sizeof(data));
-	strncpy(data, fontname, sizeof(data));
+        size_t len = strlen(fontname);
+        if (len > sizeof(data))
+            len = sizeof(data);
+	memset(data, 0, sizeof(data));
+        memcpy(data, fontname, len);
 	whlp_file_add(f, data, sizeof(data));
     }
     
