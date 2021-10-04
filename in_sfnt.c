@@ -521,7 +521,7 @@ static int glyphsbyname_cmp_search(void const *a, void const *b) {
 
 /* Generate an name for a glyph that doesn't have one. */
 static glyph genglyph(psdata *psd, unsigned idx) {
-    char buf[11];
+    char buf[64];
     if (idx == 0) return glyph_intern(psd, ".notdef");
     sprintf(buf, "glyph%u", idx);
     return glyph_intern(psd, buf);
