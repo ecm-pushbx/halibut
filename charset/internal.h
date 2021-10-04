@@ -120,4 +120,10 @@ bool unicode_to_jisx0212(long int unicode, int *r, int *c);
  */
 #define UNUSEDARG(x) ( (x) = (x) )
 
+#ifdef __GNUC__
+#define DELIBERATE_FALLTHROUGH __attribute__ ((fallthrough));
+#else
+#define DELIBERATE_FALLTHROUGH ((void)0)
+#endif
+
 #endif /* charset_internal_h */

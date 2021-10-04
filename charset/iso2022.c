@@ -81,11 +81,21 @@ typedef bool (*to_dbcs_planar_t)(long int, int *, int *, int *);
  * 
  * We are permitted to use ?:, however, and that works quite well
  * since the actual result of the sizeof expression _is_ evaluable
- * at compile time. So here's my final answer:
+ * at compile time. So here's my final answer.
+ *
+ * (The double cast of each function pointer from its original type
+ * through void (*)(void) to the final type is there to suppress the
+ * warning that later versions of gcc will otherwise give about
+ * casting between different function pointer types. Apparently gcc
+ * accepts void (*)(void) as the canonical type you use when
+ * _deliberately_ doing that, so going via that deals with the
+ * warning.)
  */
 #define TYPECHECK(x,y) ( sizeof((x)) == sizeof((x)) ? (y) : (y) )
-#define DEPLANARISE(x) TYPECHECK((x) == (to_dbcs_planar_t)NULL, (to_dbcs_t)(x))
-#define REPLANARISE(x) TYPECHECK((x) == (to_dbcs_t)NULL, (to_dbcs_planar_t)(x))
+#define DEPLANARISE(x) TYPECHECK((x) == (to_dbcs_planar_t)NULL,         \
+                                 (to_dbcs_t)(void (*)(void))(x))
+#define REPLANARISE(x) TYPECHECK((x) == (to_dbcs_t)NULL,                \
+                                 (to_dbcs_planar_t)(void (*)(void))(x))
 
 /*
  * Values used in the `enable' field. Each of these identifies a
@@ -764,6 +774,7 @@ static void read_iso2022(charset_spec const *charset, long int input_chr,
 	    switch (i2) {
 	      case 0: /* Obsolete version of GZDM4 */
 		i2 = '(';
+                DELIBERATE_FALLTHROUGH;
 	      case '(': /* GZDM4 */  case ')': /* G1DM4 */
 	      case '*': /* G2DM4 */  case '+': /* G3DM4 */
 		designate(state, i2 - '(', M4, 0, input_chr);
@@ -776,6 +787,7 @@ static void read_iso2022(charset_spec const *charset, long int input_chr,
 		emit(emitctx, ERROR);
 		break;
 	    }
+            break;
 	  case '%': /* DOCS */
 	    /* XXX What's a reasonable way to handle an unrecognised DOCS? */
 	    switch (i2) {
