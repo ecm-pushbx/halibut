@@ -838,6 +838,7 @@ static void sfnt_getmap(font_info *fi, errorstate *es) {
 	    fi->bmp[i] = 0xFFFF;
     if (!sfnt_findtable(sf, TAG_cmap, &ptr, &end)) {
 	err_sfntnotable(es, &sf->pos, "cmap");
+        return;
     }
     base = ptr;
     ptr = decode(t_cmap_decode, ptr, end, &cmap);
