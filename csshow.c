@@ -301,7 +301,8 @@ int main(int argc, char **argv)
                     &wcp, &wclen, trans[i].buf, sizeof(trans[i].buf) - 1,
                     output_charset, NULL, &error);
 
-                assert(ret < sizeof(trans[i].buf));
+                assert(0 <= ret);
+                assert((size_t)ret < sizeof(trans[i].buf));
                 trans[i].buf[ret] = '\0';
 
                 if (wclen != 0 || ret == 0 || error) {

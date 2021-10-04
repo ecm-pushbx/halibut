@@ -451,7 +451,7 @@ static long int iso2022jp_to_ucs(int subcharset, unsigned long bytes)
 	    return 0xA5;
 	else if (bytes == 0x7E)
 	    return 0x203E;
-	/* else fall through to ASCII */
+        DELIBERATE_FALLTHROUGH; /* else fall through to ASCII */
       case 0: return bytes;	       /* one-byte ASCII */
 	/* (no break needed since all control paths have returned) */
       case 2: return jisx0208_to_unicode(((bytes >> 8) & 0xFF) - 0x21,

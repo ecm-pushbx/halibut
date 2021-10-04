@@ -66,7 +66,7 @@ static void help(FILE *fp)
 bool match_long_opt(const char *argument, const char *optname,
                     const char **val)
 {
-    int optlen = strlen(optname);
+    size_t optlen = strlen(optname);
     if (strcspn(argument, "=") != optlen)
         return false;              /* not the right length to match */
     if (memcmp(argument, optname, optlen) != 0)
@@ -215,7 +215,7 @@ static int convert(FILE *infile)
         if (html_srcset != CS_NONE) {
             const char *output_cs_name = charset_to_mimeenc(dstset);
             srcset = html_srcset;
-            assert(namepos + namelen <= rdret);
+            assert(namepos + namelen <= (size_t)rdret);
             convert_got_data(inbuf, namepos);
             convert_got_data(output_cs_name, strlen(output_cs_name));
             convert_got_data(inbuf + namepos + namelen,

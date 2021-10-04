@@ -55,7 +55,7 @@ int main(int argc, char **argv)
             else
                 base = 10;
             semi_ok = true;
-        } else if (mbtowc(&ch, p, strlen(p)) == strlen(p)) {
+        } else if ((size_t)mbtowc(&ch, p, strlen(p)) == strlen(p)) {
             chars[nchars++] = ch;
             continue;
         }

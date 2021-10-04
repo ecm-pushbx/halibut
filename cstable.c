@@ -43,7 +43,8 @@ int main(int argc, char **argv)
     }
 
     for (c = 0; c < 0x30000; c++) {
-	int i, plane, row, col, chr;
+	int plane, row, col, chr;
+        size_t i;
 	char const *sep = "";
 
 	printf("U+%04x:", (unsigned)c);
