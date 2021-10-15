@@ -357,11 +357,13 @@ static void match_kw(token *tok) {
 	/* We expect hex characters thereafter. */
 	wchar_t *p = tok->text+1;
 	int n = 0;
+        bool seen_a_char = false;
 	while (*p && ishex(*p)) {
+            seen_a_char = true;
 	    n = 16 * n + fromhex(*p);
 	    p++;
 	}
-	if (!*p) {
+	if (!*p && seen_a_char) {
 	    tok->cmd = c_u;
 	    tok->aux = n;
 	    return;
