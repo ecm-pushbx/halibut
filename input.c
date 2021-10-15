@@ -1168,6 +1168,7 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
 			spcstyle = word_WhiteSpace;
 		    }
 		    if (sitem->type & stack_idx) {
+			rdadds(&indexstr, L"");
 			indexword->text = ustrdup(indexstr.text);
 			if (index_downcase) {
 			    word *w;
