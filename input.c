@@ -170,11 +170,21 @@ static int get(input *in, filepos *pos, rdstringc *rsc) {
 					     NULL, 0);
 		assert(p == buf+1 && inlen == 0);
 
+                for (int i = 0; i < in->nwc; i++) {
+                    if (in->wc[i] == 0) {
+                        /* The zero Unicode character is never legal */
+                        err_zerochar(in->es, pos);
+                        return EOF;
+                    }
+                }
+
 		in->wcpos = 0;
 	    }
 	}
 
-	return in->wc[in->wcpos++];
+        wchar_t wc = in->wc[in->wcpos++];
+
+	return wc;
 
     } else
 	return EOF;
@@ -1527,6 +1537,10 @@ static void read_file(paragraph ***ret, input *in, indexdata *idx,
                   }
 		  case c_u:
 		    uchr = t.aux;
+                    if (uchr == 0) {
+                        err_zerochar(in->es, &t.pos);
+                        break;
+                    }
 		    utext[0] = uchr; utext[1] = 0;
 		    wd.type = style;
 		    wd.breaks = false;

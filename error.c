@@ -83,6 +83,12 @@ void err_nodata(errorstate *es)
     do_error(NULL, "no data in input files");
 }
 
+void err_zerochar(errorstate *es, const filepos *fpos)
+{
+    es->fatal = true;
+    do_error(fpos, "the Unicode zero character is not permitted in input");
+}
+
 void err_brokencodepara(errorstate *es, const filepos *fpos)
 {
     es->fatal = true;

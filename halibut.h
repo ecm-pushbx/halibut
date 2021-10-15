@@ -225,6 +225,8 @@ void err_noinput(errorstate *es);
 void err_cantopen(errorstate *es, const char *sp);
 /* no data in input files */
 void err_nodata(errorstate *es);
+/* unexpected zero character in input file */
+void err_zerochar(errorstate *es, const filepos *fpos);
 /* line in codepara didn't begin `\c' */
 void err_brokencodepara(errorstate *es, const filepos *fpos);
 /* expected `}' after keyword */
