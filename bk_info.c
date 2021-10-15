@@ -1202,7 +1202,7 @@ static char *info_node_name_for_para(paragraph *par, infoconfig *cfg,
     id.charset = cfg->charset;
     info_rdaddwc(&id, par->kwtext ? par->kwtext : par->words,
 		 NULL, false, cfg);
-    info_rdaddsc(&id, NULL);
+    info_rdaddsc(&id, "");
 
     return info_node_name_core(&id, &par->fpos, es);
 }
