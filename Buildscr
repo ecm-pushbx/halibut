@@ -5,6 +5,7 @@ module halibut
 
 # Make up a version number.
 set Version $(!builddate).$(vcsid)
+ifneq "$(RELEASE)" "" set Version $(RELEASE)
 
 # use perl to avoid inconsistent behaviour of echo '\v'
 in halibut do perl -e 'print "\n\\versionid Halibut version $$ARGV[0]\n"' $(Version) >> doc/manpage.but
