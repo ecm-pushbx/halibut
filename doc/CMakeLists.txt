@@ -1,13 +1,20 @@
 # Halibut is used to build its own documentation. So we can only build
-# the documentation if we're not cross-compiling.
+# the documentation if we're not cross-compiling, or if the caller of
+# cmake has defined NATIVE_HALIBUT to point at a Halibut binary that
+# can run on the build host.
 
-if(CMAKE_CROSSCOMPILING)
-  message(WARNING "Not building the Halibut documentation in a cross-compile")
+if(CMAKE_CROSSCOMPILING AND NOT NATIVE_HALIBUT)
+  message(WARNING "Cannot build the Halibut documentation in a cross-compile; "
+    "define NATIVE_HALIBUT if you need to do it anyway")
 else()
 
   include(GNUInstallDirs)
 
-  set(HALIBUT $<TARGET_FILE:halibut>)
+  if(CMAKE_CROSSCOMPILING)
+    set(HALIBUT ${NATIVE_HALIBUT})
+  else()
+    set(HALIBUT $<TARGET_FILE:halibut>)
+  endif()
 
   set(manual_sources
     ${CMAKE_CURRENT_SOURCE_DIR}/blurb.but
