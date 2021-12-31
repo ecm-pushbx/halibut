@@ -12,7 +12,7 @@
 #define UNITS_PER_PT 1000
 #define FUNITS_PER_PT 1000.0
 
-/* Glyphs are represented by integer indicies into a table of names. */
+/* Glyphs are represented by integer indices into a table of names. */
 typedef unsigned short glyph;
 #define NOGLYPH 0xFFFF
 

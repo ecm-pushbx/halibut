@@ -100,7 +100,7 @@ void read_utf8(charset_spec const *charset, long int input_chr,
 	     * we find an overlong encoding, clear the current marker
 	     * bit and set the bit below it.  Overlong two-byte
 	     * encodings are a special case, and are detected when we
-	     * read their inital byte.
+	     * read their initial byte.
 	     */
 	    if ((charval & 0xffffffe0L) == 0x02000000L)
 		charval ^= 0x03000000L;

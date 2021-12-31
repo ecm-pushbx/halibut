@@ -9,7 +9,7 @@
 
 /*
  * Within the paper backends, PostScript glyph names are represented
- * by small integers.  For standard glyphs, these are indicies into
+ * by small integers.  For standard glyphs, these are indices into
  * a table generated from the Adobe Glyph List from
  * <http://partners.adobe.com/public/developer/en/opentype/glyphlist.txt>.
  * There are a few glyphs that are needed statically but aren't in the

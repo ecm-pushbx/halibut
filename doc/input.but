@@ -1240,7 +1240,7 @@ document locations in more than one index entry. For example:
 This will arrange that every place in the document where you have
 indexed \q{replacing toner cartridge} will be listed both there
 \e{and} under \q{toner cartridge, replacing}, so that no matter
-whether the user looks under R or under T they will stil find their
+whether the user looks under R or under T they will still find their
 way to the same parts of the document.
 
 In this example, note that although the first \c{\\IM} command

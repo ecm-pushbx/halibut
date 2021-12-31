@@ -314,7 +314,7 @@ void err_afmval(errorstate *es, const filepos *fpos, const char *sp, int i);
 void err_pfeof(errorstate *es, const filepos *fpos);
 /* bad Type 1 header line */
 void err_pfhead(errorstate *es, const filepos *fpos);
-/* otherwise invalide Type 1 font */
+/* otherwise invalid Type 1 font */
 void err_pfbad(errorstate *es, const filepos *fpos);
 /* Type 1 font but no AFM */
 void err_pfnoafm(errorstate *es, const filepos *fpos, const char *sp);

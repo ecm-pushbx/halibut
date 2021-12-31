@@ -9,7 +9,7 @@
 
 /* Ideal number of characters per line, for use in PostScript code */
 #define PS_WIDTH 79
-/* Absolute maxiumum characters per line, for use in DSC comments */
+/* Absolute maximum characters per line, for use in DSC comments */
 #define PS_MAXWIDTH 255
 
 static void ps_comment(FILE *fp, char const *leader, word *words);
