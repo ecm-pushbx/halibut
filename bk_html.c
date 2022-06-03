@@ -3245,6 +3245,14 @@ static void html_section_title(htmloutput *ho, htmlsect *s, htmlfile *thisfile,
 
 	html_words(ho, s->title->words, real ? ALL : MARKUP,
 		   thisfile, keywords, cfg);
+
+	if (real && cfg->ntfragments != 0 && s->fragments[0]) {
+	    html_text(ho, L" ");
+	    html_href(ho, thisfile, s->file, s->fragments[0]);
+	    html_text(ho, L"#");
+	    element_close(ho, "a");
+	}
+
     } else {
 	assert(s->type != NORMAL);
 	/*
