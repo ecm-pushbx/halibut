@@ -51,6 +51,7 @@ typedef struct {
     bool leaf_contains_contents;
     int leaf_smallest_contents;
     bool navlinks;
+    bool headinghashtaglinks;
     bool rellinks;
     char *contents_filename;
     char *index_filename;
@@ -362,6 +363,7 @@ static htmlconfig html_configure(paragraph *source, bool chm_mode,
     ret.leaf_contains_contents = false;
     ret.leaf_smallest_contents = 4;
     ret.navlinks = chm_mode ? false : true;
+    ret.headinghashtaglinks = false;
     ret.rellinks = true;
     ret.single_filename = dupstr("Manual.html");
     ret.contents_filename = dupstr("Contents.html");
@@ -513,6 +515,8 @@ static htmlconfig html_configure(paragraph *source, bool chm_mode,
 		ret.achapter.number_at_all = utob(uadv(k));
 	    } else if (!ustricmp(k, L"suppress-navlinks")) {
 		ret.navlinks = !utob(uadv(k));
+	    } else if (!ustricmp(k, L"heading-hashtag-links")) {
+		ret.headinghashtaglinks = utob(uadv(k));
 	    } else if (!ustricmp(k, L"rellinks")) {
 		ret.rellinks = utob(uadv(k));
 	    } else if (!ustricmp(k, L"chapter-suffix")) {
@@ -3246,7 +3250,8 @@ static void html_section_title(htmloutput *ho, htmlsect *s, htmlfile *thisfile,
 	html_words(ho, s->title->words, real ? ALL : MARKUP,
 		   thisfile, keywords, cfg);
 
-	if (real && cfg->ntfragments != 0 && s->fragments[0]) {
+	if (cfg->headinghashtaglinks &&
+	    real && cfg->ntfragments != 0 && s->fragments[0]) {
 	    html_text(ho, L" ");
 	    html_href(ho, thisfile, s->file, s->fragments[0]);
 	    html_text(ho, L"#");
